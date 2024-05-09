@@ -14,12 +14,22 @@ This project implements a Navier Stokes solver using a sharp interface immersed 
 - Supports various boundary conditions and fluid properties.
 - Includes visualization tools for analyzing results.
 
-## Installation
+## Contour Plots
 
-To use this solver, follow these steps:
+### Contour Plot 1
 
-1. Clone the repository:
+![$$ Re = 100$$](path/to/contour_plot_1.png)
 
-   ```bash
-   git clone https://github.com/yourusername/navier-stokes-solver.git
-   cd navier-stokes-solver
+Description of contour plot 1.
+
+### Contour Plot 2
+
+![$$ Re = 300$$](path/to/contour_plot_2.png)
+
+Description of contour plot 2.
+
+### Contour Plot 3
+
+![$$ Re = 1000$$](path/to/contour_plot_3.png)
+
+Description of contour plot 3.
