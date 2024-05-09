@@ -1,4 +1,4 @@
-# Navier Stokes Solver with Sharp Interface Immersed Boundary Method
+# ImmerseFlow++ : A C++ and CUDA based Navier Stokes Solver using Sharp Interface Immersed Boundary Method
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
