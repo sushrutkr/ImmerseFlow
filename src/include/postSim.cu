@@ -7,7 +7,7 @@
 //                            const float* final_data,
 //                            int ni, int nj,
 //                            const char* filename){
-  
+
 //   FILE* fp = fopen(filename, "w"); // Open in write mode
 
 //   if (fp == NULL) {

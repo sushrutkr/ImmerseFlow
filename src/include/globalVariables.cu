@@ -1,5 +1,5 @@
 // GlobalVariables.cpp
-#include "../header/globalVariables.cuh"
+#include "globalVariables.cuh"
 
 
 // namespace globalVariables {

@@ -1,21 +1,52 @@
+#pragma once
 #ifndef PRESIM_CUH
 #define PRESIM_CUH
 
-#include <cuda_runtime.h>
+#include "MACRO.h"
+
+struct vel {
+    float* velf, * velc, * velInter;
+};
 
 // Define a struct to hold the CFD arrays
 struct CFDData {
-  float* u;
-  float* v;
-  float* p;
+    float* p;
+    vel u, v;
 };
 
+
+
+
+struct CFDInput {
+    //Restart
+    int Restart;
+    int Restart_Time;
+
+    //Domain Information
+    int nx, ny;
+    double Lx, Ly;
+
+    //Iterative Solver Settings
+    int w_AD, w_PPE, AD_itermax, PPE_itermax, AD_solver, PPE_solver;
+
+    //Simulation Settings
+    double ErrorMax, tmax, dt, Re, mu;
+
+    //Data write
+    int Write_Interval;
+};
+
+
+struct FlowSolver{
+
+
+};
 // Declare a global instance of the struct as a device variable
 __device__ CFDData deviceData;
 
 // Function prototypes
-void initializeCFDData(int nx, int ny);
-void printCFDData(int nx, int ny);
+void initializeCFDData(int nx, int ny, CFDData devData);
+void printCFDData(int nx, int ny, CFDData devData);
 
 #endif // PRESIM_CUH
 
@@ -73,7 +104,7 @@ void printCFDData(int nx, int ny);
 //     Grid();
 //     // ~Grid(); // Destructor to release memory
 //     void createGrid();
-    
+
 //     // void calculateiBlank();
 // };
 

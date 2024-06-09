@@ -1,85 +1,75 @@
 // #include "../header/globalVariables.cuh"
-#include "../header/preSim.cuh"
+#include "preSim.cuh"
 #include <iostream>
 
 // Define the global instance of the struct as a device variable
 // __device__ CFDData deviceData;
 
-__global__ void initializeKernel(int nx, int ny) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-  int idx = i + j * nx;
+__global__ void initializeKernel(int nx, int ny, CFDData deviceData) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    int idx = i + j * nx;
 
-  if (i < nx && j < ny) {
-    deviceData.u[idx] = static_cast<float>(idx); // Initialize u
-    deviceData.v[idx] = static_cast<float>(idx); // Initialize v
-    deviceData.p[idx] = static_cast<float>(idx); // Initialize p
-  }
+    if (i < nx && j < ny) {
+        deviceData.u.velc[idx] = static_cast<float>(idx); // Initialize u
+        deviceData.v.velc[idx] = static_cast<float>(idx); // Initialize v
+        deviceData.p[idx] = static_cast<float>(idx); // Initialize p
+    }
 }
 
-__global__ void printKernel(int nx, int ny) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-  int idx = i + j * nx;
+__global__ void printKernel(int nx, int ny, CFDData deviceData) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    int idx = i + j * nx;
 
-  if (i < nx && j < ny) {
-    printf("u[%d,%d]: %f, v[%d,%d]: %f, p[%d,%d]: %f\n", i, j, deviceData.u[idx], i, j, deviceData.v[idx], i, j, deviceData.p[idx]);
-  }
+    if (i < nx && j < ny) {
+        printf("u[%d,%d]: %f, v[%d,%d]: %f, p[%d,%d]: %f\n", i, j, deviceData.u.velc[idx], i, j, deviceData.v.velc[idx], i, j, deviceData.p[idx]);
+    }
 }
 
-void initializeCFDData(int nx, int ny) {
-  // Allocate host memory for u, v, p
-  CFDData hostData;
-  cudaMalloc(&hostData.u, sizeof(float) * nx * ny);
-  cudaMalloc(&hostData.v, sizeof(float) * nx * ny);
-  cudaMalloc(&hostData.p, sizeof(float) * nx * ny);
+void initializeCFDData(int nx, int ny, CFDData devData) {
+    
 
-  // Check if memory allocation was successful
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    std::cerr << "Error allocating device memory: " << cudaGetErrorString(err) << std::endl;
-    return;
-  }
+    // Copy the host struct to the device
+    //cudaMemcpyToSymbol(deviceData, &hostData, sizeof(CFDData));
 
-  // Copy the host struct to the device
-  cudaMemcpyToSymbol(deviceData, &hostData, sizeof(CFDData));
+    // Kernel launch parameters
+    dim3 threadsPerBlock(16, 16);
+    dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
+        (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-  // Kernel launch parameters
-  dim3 threadsPerBlock(16, 16);
-  dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x, 
-                     (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    // Launch the initialization kernel
+    initializeKernel << <blocksPerGrid, threadsPerBlock >> > (nx, ny, devData);
+    CHECK_LAST_CUDA_ERROR();
+    cudaDeviceSynchronize(); // Ensure initializeKernel has finished execution
 
-  // Launch the initialization kernel
-  initializeKernel<<<blocksPerGrid, threadsPerBlock>>>(nx, ny);
-  cudaDeviceSynchronize(); // Ensure initializeKernel has finished execution
 
-  // Check for errors
-  err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    std::cerr << "Error launching initialization kernel: " << cudaGetErrorString(err) << std::endl;
-    cudaFree(hostData.u);
-    cudaFree(hostData.v);
-    cudaFree(hostData.p);
-    return;
-  }
+    //// Check for errors
+    //cudaError_t err = cudaGetLastError();
+    //if (err != cudaSuccess) {
+    //    std::cerr << "Error launching initialization kernel: " << cudaGetErrorString(err) << std::endl;
+    // 
+    //    return;
+    //}
 }
 
-void printCFDData(int nx, int ny) {
-  // Kernel launch parameters
-  dim3 threadsPerBlock(16, 16);
-  dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x, 
-                     (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
+void printCFDData(int nx, int ny, CFDData devData) {
+    // Kernel launch parameters
+    dim3 threadsPerBlock(16, 16);
+    dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
+        (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    
+    // Launch the print kernel
+    printKernel << <blocksPerGrid, threadsPerBlock >> > (nx, ny, devData);
+    CHECK_LAST_CUDA_ERROR();
+    cudaDeviceSynchronize(); // Ensure printKernel has finished execution
 
-  // Launch the print kernel
-  printKernel<<<blocksPerGrid, threadsPerBlock>>>(nx, ny);
-  cudaDeviceSynchronize(); // Ensure printKernel has finished execution
-
-  // Check for errors
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    std::cerr << "Error launching print kernel: " << cudaGetErrorString(err) << std::endl;
-    return;
-  }
+    //// Check for errors
+    //cudaError_t err = cudaGetLastError();
+    //if (err != cudaSuccess) {
+    //    std::cerr << "Error launching print kernel: " << cudaGetErrorString(err) << std::endl;
+    //    return;
+    //}
 }
 
 
@@ -158,7 +148,7 @@ void printCFDData(int nx, int ny) {
 // __global__ void printThread(){
 //   int i = threadIdx.x + blockIdx.x*blockDim.x;
 //   printf("ThreadIdx : %f \n",&GlobalVariables::Device::x[i]);
-  
+
 // }
 
 // Initialize::Initialize(){
@@ -224,7 +214,7 @@ void printCFDData(int nx, int ny) {
 //       infile_y >> dummy >> y_[i];
 //   }
 //   infile_y.close(); 
-  
+
 //   cudaMemcpy(GlobalVariables::Device::x, x_, nx_ * sizeof(float), cudaMemcpyHostToDevice);
 //   cudaMemcpy(GlobalVariables::Device::y, y_, ny_ * sizeof(float), cudaMemcpyHostToDevice);
 

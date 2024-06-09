@@ -1,32 +1,33 @@
-#include <iostream>
-#include <fstream>
-#include "./header/preSim.cuh"
+#pragma once
+#include "preSim.cuh"
 // #include "./header/globalVariables.cuh"
 
 int main() {
-  // Read nx and ny from a file
-  std::ifstream inputFile("../inputs/inputs.txt");
-  int nx, ny;
-  if (inputFile.is_open()) {
-    inputFile >> nx >> ny;
-    inputFile.close();
-  } else {
-    std::cerr << "Unable to open file" << std::endl;
-    return 1;
-  }
+    // Read nx and ny from a file
+    std::ifstream inputFile("../inputs/inputs.txt");
+    int nx, ny;
+    if (inputFile.is_open()) {
+        inputFile >> nx >> ny;
+        inputFile.close();
+    }
+    else {
+        std::cerr << "Unable to open file" << std::endl;
+        return 1;
+    }
 
-  // Initialize and print the CFD data using CUDA
-  initializeCFDData(nx, ny);
-  printCFDData(nx, ny);
+    // Allocate host memory for u, v, p
+    CFDData devData;
 
-  // Free device memory
-  CFDData hostData;
-  cudaMemcpyFromSymbol(&hostData, deviceData, sizeof(CFDData));
-  cudaFree(hostData.u);
-  cudaFree(hostData.v);
-  cudaFree(hostData.p);
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&devData.u.velc, sizeof(float) * nx * ny));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&devData.v.velc, sizeof(float) * nx * ny));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&devData.p, sizeof(float) * nx * ny));
+    devData.u.velc;
+    // Initialize and print the CFD data using CUDA
+    initializeCFDData(nx, ny, devData);
+    
+    printCFDData(nx, ny, devData);
 
-  return 0;
+    return 0;
 }
 
 
@@ -58,7 +59,7 @@ int main() {
 // int main() {
 //   // Assign a value to nx
 //   int nx = 10; // Update nx to 10 to match the array size
-  
+
 //   // Kernel launch parameters (adjust based on your needs)
 //   int threadsPerBlock = 256;
 //   int blocksPerGrid = (nx + threadsPerBlock - 1) / threadsPerBlock;
@@ -92,7 +93,7 @@ int main() {
 // // __global__ void printThread(){
 // //   int i = threadIdx.x + blockIdx.x*blockDim.x;
 // //   printf("ThreadIdx : %d \n",i);
-  
+
 // // }
 
 // int main() {
