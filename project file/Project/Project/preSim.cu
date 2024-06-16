@@ -5,6 +5,33 @@
 // Define the global instance of the struct as a device variable
 // __device__ CFDData deviceData;
 
+template <unsigned int blockSize>
+__device__ void warpReduce(volatile int* sdata, unsigned int tid) {
+    if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
+    if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
+    if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
+    if (blockSize >= 8) sdata[tid] += sdata[tid + 4];
+    if (blockSize >= 4) sdata[tid] += sdata[tid + 2];
+    if (blockSize >= 2) sdata[tid] += sdata[tid + 1];
+}
+
+template <unsigned int blockSize>
+__global__ void reduce6(int* g_idata, int* g_odata, unsigned int n) {
+    extern __shared__ int sdata[];
+    unsigned int tid = threadIdx.x;
+    unsigned int i = blockIdx.x * (blockSize * 2) + tid;
+    unsigned int gridSize = blockSize * 2 * gridDim.x;
+    sdata[tid] = 0;
+    while (i < n) { sdata[tid] += g_idata[i] + g_idata[i + blockSize]; i += gridSize; }
+    __syncthreads();
+    if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+    if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+    if (blockSize >= 128) { if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
+    if (tid < 32) warpReduce<blockSize>(sdata, tid);
+    if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+}
+
+
 __global__ void initializeKernel(int nx, int ny, CFDData deviceData) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -27,49 +54,30 @@ __global__ void printKernel(int nx, int ny, CFDData deviceData) {
     }
 }
 
-void initializeCFDData(int nx, int ny, CFDData devData) {
-    
 
-    // Copy the host struct to the device
-    //cudaMemcpyToSymbol(deviceData, &hostData, sizeof(CFDData));
 
+void ImmerseFlow:: initializeCFDData() {
     // Kernel launch parameters
     dim3 threadsPerBlock(16, 16);
-    dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
-        (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    dim3 blocksPerGrid((Input.nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
+        (Input.ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
     // Launch the initialization kernel
-    initializeKernel << <blocksPerGrid, threadsPerBlock >> > (nx, ny, devData);
+    initializeKernel << <blocksPerGrid, threadsPerBlock >> > (Input.nx, Input.ny, Data);
     CHECK_LAST_CUDA_ERROR();
-    cudaDeviceSynchronize(); // Ensure initializeKernel has finished execution
-
-
-    //// Check for errors
-    //cudaError_t err = cudaGetLastError();
-    //if (err != cudaSuccess) {
-    //    std::cerr << "Error launching initialization kernel: " << cudaGetErrorString(err) << std::endl;
-    // 
-    //    return;
-    //}
+    cudaDeviceSynchronize(); 
 }
 
-void printCFDData(int nx, int ny, CFDData devData) {
+void ImmerseFlow::printCFDData() {
     // Kernel launch parameters
     dim3 threadsPerBlock(16, 16);
-    dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
-        (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    dim3 blocksPerGrid((Input.nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
+        (Input.ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
     
     // Launch the print kernel
-    printKernel << <blocksPerGrid, threadsPerBlock >> > (nx, ny, devData);
+    printKernel << <blocksPerGrid, threadsPerBlock >> > (Input.nx, Input.ny, Data);
     CHECK_LAST_CUDA_ERROR();
-    cudaDeviceSynchronize(); // Ensure printKernel has finished execution
-
-    //// Check for errors
-    //cudaError_t err = cudaGetLastError();
-    //if (err != cudaSuccess) {
-    //    std::cerr << "Error launching print kernel: " << cudaGetErrorString(err) << std::endl;
-    //    return;
-    //}
+    cudaDeviceSynchronize(); 
 }
 
 

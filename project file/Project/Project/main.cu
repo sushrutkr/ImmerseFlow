@@ -2,6 +2,7 @@
 #include "preSim.cuh"
 // #include "./header/globalVariables.cuh"
 
+
 int main() {
     // Read nx and ny from a file
     std::ifstream inputFile("../inputs/inputs.txt");
@@ -15,19 +16,21 @@ int main() {
         return 1;
     }
 
+
     // Allocate host memory for u, v, p
-    CFDData devData;
+    ImmerseFlow Solver;
+    Solver.Input.nx = nx;
+    Solver.Input.ny = ny;
 
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&devData.u.velc, sizeof(float) * nx * ny));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&devData.v.velc, sizeof(float) * nx * ny));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&devData.p, sizeof(float) * nx * ny));
-    devData.u.velc;
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.Data.u.velc, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.Data.v.velc, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.Data.p, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
+
     // Initialize and print the CFD data using CUDA
-    initializeCFDData(nx, ny, devData);
-    
-    printCFDData(nx, ny, devData);
+    Solver.initializeCFDData();
+    Solver.printCFDData();
 
-    return 0;
+    
 }
 
 

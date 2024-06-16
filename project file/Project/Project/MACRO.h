@@ -32,3 +32,4 @@ inline void checkLastCuda(const char* const file, const int line)
         std::exit(EXIT_FAILURE);
     }
 }
+

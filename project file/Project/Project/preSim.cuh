@@ -15,8 +15,6 @@ struct CFDData {
 };
 
 
-
-
 struct CFDInput {
     //Restart
     int Restart;
@@ -37,16 +35,16 @@ struct CFDInput {
 };
 
 
-struct FlowSolver{
-
-
+struct ImmerseFlow{
+    CFDData Data;
+    CFDInput  Input;
+    // Function prototypes
+    void initializeCFDData();
+    void printCFDData();
 };
-// Declare a global instance of the struct as a device variable
-__device__ CFDData deviceData;
 
-// Function prototypes
-void initializeCFDData(int nx, int ny, CFDData devData);
-void printCFDData(int nx, int ny, CFDData devData);
+
+
 
 #endif // PRESIM_CUH
 
