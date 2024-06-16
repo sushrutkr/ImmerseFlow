@@ -14,7 +14,7 @@ struct Grid {
 };
 
 struct IBM {
-    float* iblank;
+    float* iBlank;
 };
 
 extern CFDData devData;  
