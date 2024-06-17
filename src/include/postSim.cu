@@ -22,7 +22,7 @@ void write_results_to_file(const float* x,
   // Write data in row-major order
   for (int j = 0; j < nj; j++) {
     for (int i = 0; i < ni; i++) {
-      fprintf(fp, "%f,%f,%f\n", x[i], y[j], final_data[i * nj + j]);
+      fprintf(fp, "%f,%f,%f\n", x[i], y[j], final_data[i + j * ni]);
     }
   }
 

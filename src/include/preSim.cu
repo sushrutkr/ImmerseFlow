@@ -1,4 +1,5 @@
 #include "../header/preSim.cuh"
+#include "../header/postSim.cuh"
 #include "../header/globalVariables.cuh"
 #include <iostream>
 #include <fstream>
@@ -28,7 +29,7 @@ __global__ void printKernel(int nx, int ny, CFDData deviceData) {
     }
 }
 
-__global__ void iBlankComputeKernel(int nx, int ny, Grid gridData, IBM& ibm) {
+__global__ void iBlankComputeKernel(int nx, int ny, Grid gridData, IBM ibm) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
     int idx = i + j * nx;
@@ -44,22 +45,64 @@ __global__ void iBlankComputeKernel(int nx, int ny, Grid gridData, IBM& ibm) {
         // Check if within radius of 0.5
         if (distance <= 0.5f) {
             ibm.iBlank[idx] = 1.0f; // Assuming linear indexing
+        } else {
+            ibm.iBlank[idx] = 0.0f;
         }
     }
 }
 
 
-void initializeData(int nx, int ny, CFDData& devData,  IBM& ibm, Grid gridData) {
-    dim3 threadsPerBlock(16, 16);
-    dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x, (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
-
-    initializeKernel<<<blocksPerGrid, threadsPerBlock>>>(nx, ny, devData);
-    CHECK_LAST_CUDA_ERROR();
-
-    printKernel<<<blocksPerGrid, threadsPerBlock>>>(nx, ny, devData);
-    CHECK_LAST_CUDA_ERROR();
-    cudaDeviceSynchronize();
+void copyDataToHost(int nx, int ny, const Grid& gridData, const IBM& ibm, float* host_x, float* host_y, float* host_iBlank) {
+    // Copy data from device to host
+    CHECK_CUDA_ERROR(cudaMemcpy(host_x, gridData.x, sizeof(float) * nx, cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpy(host_y, gridData.y, sizeof(float) * ny, cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpy(host_iBlank, ibm.iBlank, sizeof(float) * nx * ny, cudaMemcpyDeviceToHost));
 }
+
+
+void initializeData(int nx, int ny, CFDData& devData, IBM& ibm, Grid gridData) {
+    dim3 threadsPerBlock(16, 16);
+    dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x, 
+                       (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+    // Initialize kernel
+    initializeKernel<<<blocksPerGrid, threadsPerBlock>>>(nx, ny, devData);
+    CHECK_CUDA_ERROR(cudaGetLastError());
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+    // Initialize iBlank to zero
+    CHECK_CUDA_ERROR(cudaMemset(ibm.iBlank, 0, sizeof(float) * nx * ny));
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+    // Compute iBlank kernel
+    iBlankComputeKernel<<<blocksPerGrid, threadsPerBlock>>>(nx, ny, gridData, ibm);
+    CHECK_CUDA_ERROR(cudaGetLastError());
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+    // Allocate host memory
+    float* host_x = (float*)malloc(sizeof(float) * nx);
+    float* host_y = (float*)malloc(sizeof(float) * ny);
+    float* host_iBlank = (float*)malloc(sizeof(float) * nx * ny);
+
+    // Check allocation
+    if (host_x == nullptr || host_y == nullptr || host_iBlank == nullptr) {
+        std::cerr << "Host memory allocation failed" << std::endl;
+        return;
+    }
+
+    // Copy data from device to host
+    copyDataToHost(nx, ny, gridData, ibm, host_x, host_y, host_iBlank);
+
+    // Write results to file
+    write_results_to_file(host_x, host_y, host_iBlank, nx, ny, "../results/final_results.dat");
+
+    // Free host memory
+    free(host_x);
+    free(host_y);
+    free(host_iBlank);
+}
+
+
 
 
 void readGridData(int nx, int ny, Grid& gridData) {
