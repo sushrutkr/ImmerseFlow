@@ -1,38 +1,40 @@
 # Compiler and flags
-NVCC := nvcc
-NVCC_FLAGS := -std=c++11
+NVCC = nvcc
+CXXFLAGS = -arch=sm_60 -std=c++11
 
 # Directories
-SRC_DIR := .
-INCLUDE_DIR := include
-OBJ_DIR := obj
-BIN_DIR := bin
+INCDIR = include
+SRCDIR = src
+OBJDIR = obj
+BINDIR = bin
 
-# Files
-SRC_FILES := $(wildcard $(SRC_DIR)/*.cu)
-OBJ_FILES := $(patsubst $(SRC_DIR)/%.cu,$(OBJ_DIR)/%.o,$(SRC_FILES))
-DEP_FILES := $(OBJ_FILES:.o=.d)
+# Source files
+SRCFILES = $(wildcard $(SRCDIR)/*.cu) $(wildcard $(INCDIR)/*.cu)
+OBJFILES = $(patsubst $(SRCDIR)/%.cu, $(OBJDIR)/%.o, $(wildcard $(SRCDIR)/*.cu)) $(patsubst $(INCDIR)/%.cu, $(OBJDIR)/%.o, $(wildcard $(INCDIR)/*.cu))
 
-# Target executable
-TARGET := $(BIN_DIR)/main
+# Executable name
+EXEC = $(BINDIR)/immerseFlow
+
+# Default target
+all: $(EXEC)
+
+# Build executable
+$(EXEC): $(OBJFILES)
+	mkdir -p $(BINDIR)
+	$(NVCC) $(CXXFLAGS) -o $@ $^ -run
+
+# Compile CUDA source files from src directory
+$(OBJDIR)/%.o: $(SRCDIR)/%.cu
+	mkdir -p $(OBJDIR)
+	$(NVCC) $(CXXFLAGS) -c -o $@ $<
+
+# Compile CUDA source files from include directory
+$(OBJDIR)/%.o: $(INCDIR)/%.cu
+	mkdir -p $(OBJDIR)
+	$(NVCC) $(CXXFLAGS) -c -o $@ $<
+
+# Clean
+clean:
+	rm -rf $(OBJDIR)/* $(BINDIR)/*
 
 .PHONY: all clean
-
-all: $(TARGET)
-
-$(TARGET): $(OBJ_FILES) | $(BIN_DIR)
-    $(NVCC) $(NVCC_FLAGS) $^ -o $@
-
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cu | $(OBJ_DIR)
-    $(NVCC) $(NVCC_FLAGS) -MMD -MP -c $< -o $@
-
--include $(DEP_FILES)
-
-$(OBJ_DIR):
-    mkdir -p $@
-
-$(BIN_DIR):
-    mkdir -p $@
-
-clean:
-    $(RM) -r $(OBJ_DIR) $(BIN_DIR)

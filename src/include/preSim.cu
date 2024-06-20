@@ -1,245 +1,156 @@
-// #include "../header/globalVariables.cuh"
 #include "../header/preSim.cuh"
+#include "../header/postSim.cuh"
+#include "../header/globalVariables.cuh"
 #include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <cuda_runtime.h>
 
-// Define the global instance of the struct as a device variable
-// __device__ CFDData deviceData;
 
-__global__ void initializeKernel(int nx, int ny) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-  int idx = i + j * nx;
+__global__ void initializeKernel(int nx, int ny, CFDData deviceData) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    int idx = i + j * nx;
 
-  if (i < nx && j < ny) {
-    deviceData.u[idx] = static_cast<float>(idx); // Initialize u
-    deviceData.v[idx] = static_cast<float>(idx); // Initialize v
-    deviceData.p[idx] = static_cast<float>(idx); // Initialize p
-  }
+    if (i < nx && j < ny) {
+        deviceData.u.velc[idx] = static_cast<float>(idx); // Initialize u
+        deviceData.v.velc[idx] = static_cast<float>(idx); // Initialize v
+        deviceData.p[idx] = static_cast<float>(idx); // Initialize p
+    }
 }
 
-__global__ void printKernel(int nx, int ny) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-  int idx = i + j * nx;
+__global__ void printKernel(int nx, int ny, CFDData deviceData) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    int idx = i + j * nx;
 
-  if (i < nx && j < ny) {
-    printf("u[%d,%d]: %f, v[%d,%d]: %f, p[%d,%d]: %f\n", i, j, deviceData.u[idx], i, j, deviceData.v[idx], i, j, deviceData.p[idx]);
-  }
+    if (i < nx && j < ny) {
+        printf("u[%d,%d]: %f, v[%d,%d]: %f, p[%d,%d]: %f\n", i, j, deviceData.u.velc[idx], i, j, deviceData.v.velc[idx], i, j, deviceData.p[idx]);
+    }
 }
 
-void initializeCFDData(int nx, int ny) {
-  // Allocate host memory for u, v, p
-  CFDData hostData;
-  cudaMalloc(&hostData.u, sizeof(float) * nx * ny);
-  cudaMalloc(&hostData.v, sizeof(float) * nx * ny);
-  cudaMalloc(&hostData.p, sizeof(float) * nx * ny);
+__global__ void iBlankComputeKernel(int nx, int ny, Grid gridData, IBM ibm) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    int idx = i + j * nx;
 
-  // Check if memory allocation was successful
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    std::cerr << "Error allocating device memory: " << cudaGetErrorString(err) << std::endl;
-    return;
-  }
+    if (i < nx && j < ny) {
+        // Access x and y from gridData directly
+        float x = gridData.x[i];
+        float y = gridData.y[j];
 
-  // Copy the host struct to the device
-  cudaMemcpyToSymbol(deviceData, &hostData, sizeof(CFDData));
+        // Calculate distance from center (3, 2.5)
+        float distance = sqrtf(powf((x - 3.0f), 2) + powf((y - 2.5f), 2));
 
-  // Kernel launch parameters
-  dim3 threadsPerBlock(16, 16);
-  dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x, 
-                     (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
-
-  // Launch the initialization kernel
-  initializeKernel<<<blocksPerGrid, threadsPerBlock>>>(nx, ny);
-  cudaDeviceSynchronize(); // Ensure initializeKernel has finished execution
-
-  // Check for errors
-  err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    std::cerr << "Error launching initialization kernel: " << cudaGetErrorString(err) << std::endl;
-    cudaFree(hostData.u);
-    cudaFree(hostData.v);
-    cudaFree(hostData.p);
-    return;
-  }
-}
-
-void printCFDData(int nx, int ny) {
-  // Kernel launch parameters
-  dim3 threadsPerBlock(16, 16);
-  dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x, 
-                     (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
-
-  // Launch the print kernel
-  printKernel<<<blocksPerGrid, threadsPerBlock>>>(nx, ny);
-  cudaDeviceSynchronize(); // Ensure printKernel has finished execution
-
-  // Check for errors
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    std::cerr << "Error launching print kernel: " << cudaGetErrorString(err) << std::endl;
-    return;
-  }
+        // Check if within radius of 0.5
+        if (distance <= 0.5f) {
+            ibm.iBlank[idx] = 1.0f; // Assuming linear indexing
+        } else {
+            ibm.iBlank[idx] = 0.0f;
+        }
+    }
 }
 
 
-
-// __global__ void myKernel(int nx_) {
-//   int i = blockIdx.x * blockDim.x + threadIdx.x;
-//   if (i < nx_) {
-//     domain::d_myArray[i] = static_cast<float>(i); // Initialize the array
-//   }
-// }
-
-// __global__ void printKernel(int nx_) {
-//   int i = blockIdx.x * blockDim.x + threadIdx.x;
-//   if (i < nx_) {
-//     printf("Result[%d]: %f\n", i, domain::d_myArray[i]);
-//   }
-// }
-
-// void initializeArray(int nx) {
-//   // Allocate device memory for d_myArray
-//   float* d_myArray_host;
-//   cudaMalloc(&d_myArray_host, sizeof(float) * nx);
-
-//   // Copy the pointer to the device symbol
-//   cudaMemcpyToSymbol(domain::d_myArray, &d_myArray_host, sizeof(float*));
-
-//   // Kernel launch parameters
-//   int threadsPerBlock = 256;
-//   int blocksPerGrid = (nx + threadsPerBlock - 1) / threadsPerBlock;
-
-//   // Launch the initialization kernel
-//   myKernel<<<blocksPerGrid, threadsPerBlock>>>(nx);
-//   cudaDeviceSynchronize(); // Ensure myKernel has finished execution
-
-//   // Check for errors
-//   cudaError_t err = cudaGetLastError();
-//   if (err != cudaSuccess) {
-//     std::cerr << "Error launching kernel: " << cudaGetErrorString(err) << std::endl;
-//     cudaFree(d_myArray_host);
-//     return;
-//   }
-
-//   // Store the device pointer for later use
-//   cudaMemcpyToSymbol(domain::d_myArray, &d_myArray_host, sizeof(float*));
-// }
-
-// void printArray(int nx) {
-//   // Kernel launch parameters
-//   int threadsPerBlock = 256;
-//   int blocksPerGrid = (nx + threadsPerBlock - 1) / threadsPerBlock;
-
-//   // Launch the print kernel
-//   printKernel<<<blocksPerGrid, threadsPerBlock>>>(nx);
-//   cudaDeviceSynchronize(); // Ensure printKernel has finished execution
-
-//   // Check for errors
-//   cudaError_t err = cudaGetLastError();
-//   if (err != cudaSuccess) {
-//     std::cerr << "Error launching kernel: " << cudaGetErrorString(err) << std::endl;
-//     return;
-//   }
-// }
+void copyDataToHost(int nx, int ny, const Grid& gridData, const IBM& ibm, float* host_x, float* host_y, float* host_iBlank) {
+    // Copy data from device to host
+    CHECK_CUDA_ERROR(cudaMemcpy(host_x, gridData.x, sizeof(float) * nx, cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpy(host_y, gridData.y, sizeof(float) * ny, cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpy(host_iBlank, ibm.iBlank, sizeof(float) * nx * ny, cudaMemcpyDeviceToHost));
+}
 
 
-// #include <fstream>
-// #include <cmath>
-// #include "../header/globalVariables.cuh"
-// #include "../header/preSim.cuh"
+void ImmerseFlow:: initializeData() {
+    dim3 threadsPerBlock(16, 16);
+    dim3 blocksPerGrid((Input.nx + threadsPerBlock.x - 1) / threadsPerBlock.x, 
+                       (Input.ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-// void setZero(float* vec, int N) {
-//     for (int i = 0; i < N; i++) {
-//       vec[i] = 0.0f;
-//     }
-// }
+    // Initialize kernel
+    initializeKernel<<<blocksPerGrid, threadsPerBlock>>>(Input.nx, Input.ny, Data);
+    CHECK_CUDA_ERROR(cudaGetLastError());
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
-// __global__ void printThread(){
-//   int i = threadIdx.x + blockIdx.x*blockDim.x;
-//   printf("ThreadIdx : %f \n",&GlobalVariables::Device::x[i]);
-  
-// }
+    // Initialize iBlank to zero
+    CHECK_CUDA_ERROR(cudaMemset(ibm.iBlank, 0, sizeof(float) * Input.nx * Input.ny));
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
-// Initialize::Initialize(){
-//   InputReader();         // Call member function InputReader()
-//   InitializeArrays();    // Call member function InitializeArrays()
-// }
+    // Compute iBlank kernel
+    iBlankComputeKernel<<<blocksPerGrid, threadsPerBlock>>>(Input.nx, Input.ny, gridData, ibm);
+    CHECK_CUDA_ERROR(cudaGetLastError());
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
-// void Initialize::InputReader(){
-//   nx_ = 181;
-//   ny_ = 129;
-//   N_ = nx_ * ny_;
+    // Allocate host memory
+    float* host_x = (float*)malloc(sizeof(float) * Input.nx);
+    float* host_y = (float*)malloc(sizeof(float) * Input.ny);
+    float* host_iBlank = (float*)malloc(sizeof(float) * Input.nx * Input.ny);
 
-//   GlobalVariables::Device::nx = nx_;
-//   GlobalVariables::Device::ny = ny_;
-//   GlobalVariables::Device::N = N_;
-// }
+    // Check allocation
+    if (host_x == nullptr || host_y == nullptr || host_iBlank == nullptr) {
+        std::cerr << "Host memory allocation failed" << std::endl;
+        return;
+    }
 
-// void Initialize::InitializeArrays(){
+    // Copy data from device to host
+    copyDataToHost(Input.nx, Input.ny, gridData, ibm, host_x, host_y, host_iBlank);
 
+    // Write results to file
+    write_results_to_file(host_x, host_y, host_iBlank, Input.nx, Input.ny, "../results/final_results.dat");
 
-//   cudaMalloc(&GlobalVariables::Device::x, nx_ * sizeof(float));
-//   cudaMemset(GlobalVariables::Device::x, 0, GlobalVariables::Device::nx * sizeof(float));
-
-//   cudaMalloc(&GlobalVariables::Device::y, ny_ * sizeof(float));
-//   cudaMemset(GlobalVariables::Device::y, 0, GlobalVariables::Device::ny * sizeof(float));
-
-//   cudaMalloc(&GlobalVariables::Device::iBlank, N_ * sizeof(float));
-//   cudaMemset(GlobalVariables::Device::iBlank, 0, GlobalVariables::Device::N * sizeof(float));
-// }
+    // Free host memory
+    free(host_x);
+    free(host_y);
+    free(host_iBlank);
+}
 
 
-// Grid::Grid() {
-//   // Fill x and y arrays
-//   createGrid();
-//   // Calculate iBlank
-//   // calculateiBlank();
-// }
 
-// void Grid::createGrid(){
-//   nx_ = GlobalVariables::Device::nx;
-//   ny_ = GlobalVariables::Device::ny;
 
-//   x_ = new float[nx_];
-//   y_ = new float[ny_];
+void ImmerseFlow :: readGridData() {
+    float *x;
+    float *y;
+    int idx, idy;
+    std::ifstream infile;
 
-//   // Read X coordinate data
-//   std::ifstream infile_x("../inputs/xgrid.dat");
-//   if (!infile_x){
-//       std::cerr << "Error Opening Xgrid.dat" << std::endl;
-//   }
-//   int dummy;
-//   for (int i = 0; i < nx_; ++i){
-//       infile_x >> dummy >> x_[i];
-//   }
-//   infile_x.close();
+    x = (float*)malloc(Input.nx * sizeof(float));
+    y = (float*)malloc(Input.ny * sizeof(float));
 
-//   // Read Y coordinate data
-//   std::ifstream infile_y("../inputs/ygrid.dat");
-//   if (!infile_y){
-//       std::cerr << "Error Opening Ygrid.dat" << std::endl;
-//   }
-//   for (int i = 0; i < ny_; ++i){
-//       infile_y >> dummy >> y_[i];
-//   }
-//   infile_y.close(); 
-  
-//   cudaMemcpy(GlobalVariables::Device::x, x_, nx_ * sizeof(float), cudaMemcpyHostToDevice);
-//   cudaMemcpy(GlobalVariables::Device::y, y_, ny_ * sizeof(float), cudaMemcpyHostToDevice);
+    // Check if memory allocation was successful
+    if (x == nullptr || y == nullptr) {
+        std::cerr << "Memory allocation failed" << std::endl;
+        exit(1);
+    }
 
-// }
+    // Read values from xgrid.dat
+    infile.open("../inputs/xgrid.dat");
+    if (!infile) {
+        std::cerr << "Error opening xgrid.dat" << std::endl;
+        free(x);
+        free(y);
+        exit(1);
+    }
+    for (int i = 0; i < Input.nx; i++) {
+        infile >> idx >> x[i];
+    }
+    infile.close();
 
-// // void Grid::calculateiBlank() {
-// //     // Set all elements of iBlank to zero
-// //     setZero(iBlank_, nx_, ny_);
+    // Read values from ygrid.dat
+    infile.open("../inputs/ygrid.dat");
+    if (!infile) {
+        std::cerr << "Error opening ygrid.dat" << std::endl;
+        free(x);
+        free(y);
+        exit(1);
+    }
+    for (int i = 0; i < Input.ny; i++) {
+        infile >> idy >> y[i];
+    }
+    infile.close();
 
-// //     // Iterate over each element of iBlank and set it to 1.0f if it satisfies the condition
-// //     for (int i = 0; i < nx_; ++i) {
-// //         for (int j = 0; j < ny_; ++j) {
-// //             if (pow((x_[i] - 3), 2) + pow((y_[j] - 2.5), 2) <= pow(0.5, 2)) {
-// //                 iBlank_[i * ny_ + j] = 1.0f;
-// //             }
-// //         }
-// //     }
-// // }
+    // Copy data from CPU to GPU
+    CHECK_CUDA_ERROR(cudaMemcpy(gridData.x, x, Input.nx * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(gridData.y, y, Input.ny * sizeof(float), cudaMemcpyHostToDevice));
+
+    // Free CPU memory
+    free(x);
+    free(y);
+}

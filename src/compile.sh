@@ -1,9 +1,9 @@
 rm obj/*
 
 # Compile include/
-# nvcc -c include/globalVariables.cu -o obj/globalVariables.o
+nvcc -c include/globalVariables.cu -o obj/globalVariables.o
 nvcc -c include/preSim.cu -o obj/preSim.o
-# nvcc -c include/postSim.cu -o obj/postSim.o
+nvcc -c include/postSim.cu -o obj/postSim.o
 
 # Compile main.cpp
 nvcc -c main.cu -o obj/main.o
