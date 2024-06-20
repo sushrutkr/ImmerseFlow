@@ -26,9 +26,12 @@ int main() {
     CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.Data.v.velc, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.Data.p, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
 
-    // Initialize and print the CFD data using CUDA
+    // Initialize and print the CFD
+    // data using CUDA
     Solver.initializeCFDData();
     Solver.printCFDData();
+
+    
 
     
 }
