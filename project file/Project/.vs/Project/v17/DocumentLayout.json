@@ -3,16 +3,20 @@
   "WorkspaceRootPath": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\main.cu||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|solutionrelative:Project\\main.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\preSim.cu||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|solutionrelative:Project\\preSim.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\preSim.cuh||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|solutionrelative:Project\\preSim.cuh||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\preSim.cu||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|solutionrelative:Project\\preSim.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\postSim.cu||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|solutionrelative:Project\\postSim.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\main.cu||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|solutionrelative:Project\\main.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{6E36EAE6-A9B3-4F27-A7E0-1A62EE65880B}|Project\\Project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\MACRO.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
@@ -30,7 +34,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Document",
@@ -48,13 +52,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "preSim.cu",
               "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\preSim.cu",
               "RelativeDocumentMoniker": "Project\\preSim.cu",
               "ToolTip": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\preSim.cu",
               "RelativeToolTip": "Project\\preSim.cu",
-              "ViewState": "AQIAABgAAAAAAAAAAAAAAD4AAAAaAAAA",
+              "ViewState": "AQIAADAAAAAAAAAAAAAAADsAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2024-06-03T02:18:40.579Z",
               "IsPinned": true,
@@ -62,7 +66,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "MACRO.h",
               "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\MACRO.h",
               "RelativeDocumentMoniker": "Project\\MACRO.h",
@@ -75,20 +79,33 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 2,
+              "Title": "postSim.cu",
+              "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\postSim.cu",
+              "RelativeDocumentMoniker": "Project\\postSim.cu",
+              "ToolTip": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\postSim.cu",
+              "RelativeToolTip": "Project\\postSim.cu",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-06-20T02:13:09.648Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "main.cu",
               "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\main.cu",
               "RelativeDocumentMoniker": "Project\\main.cu",
               "ToolTip": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\main.cu",
               "RelativeToolTip": "Project\\main.cu",
-              "ViewState": "AQIAABIAAAAAAAAAAAAAAB8AAAAUAAAA",
+              "ViewState": "AQIAAF0AAAAAAAAAAAAAAB0AAAAWAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2024-06-09T23:20:57.686Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "globalVariables.cu",
               "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file\\Project\\Project\\globalVariables.cu",
               "RelativeDocumentMoniker": "Project\\globalVariables.cu",
