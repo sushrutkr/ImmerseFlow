@@ -2,39 +2,83 @@
 #include "./header/globalVariables.cuh"
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <string>
 
-int main() {
-    int nx, ny;
-
-    std::ifstream inputFile("../inputs/inputs.txt");
-    if (inputFile.is_open()) {
-        inputFile >> nx >> ny;
-        inputFile.close();
-    } else {
-        std::cerr << "Unable to open file" << std::endl;
-        return 1;
+void readInputFile(const std::string& filename, ImmerseFlow& Solver) {
+    std::ifstream inputFile(filename);
+    if (!inputFile.is_open()) {
+        std::cerr << "Unable to open file: " << filename << std::endl;
+        exit(1);
     }
 
-    ImmerseFlow Solver;
-    Solver.Input.nx = nx;
-    Solver.Input.ny = ny;
+    std::string line;
+    while (getline(inputFile, line)) {
+        if (line.empty() || line[0] == '=' || line[0] == '_') {
+            continue;  // Skip header or separator lines
+        }
 
+        std::istringstream iss(line);
+        std::string keyword;
+
+        // Reading and parsing line by line
+        if (line.find("Restart") != std::string::npos) {
+            getline(inputFile, line);  // Read the next line
+            iss.str(line); iss.clear();
+            iss >> Solver.Input.Restart >> Solver.Input.Restart_Time;
+        } else if (line.find("nx") != std::string::npos) {
+            getline(inputFile, line);  // Read the next line
+            iss.str(line); iss.clear();
+            iss >> Solver.Input.nx >> Solver.Input.ny;
+        } else if (line.find("Lx") != std::string::npos) {
+            getline(inputFile, line);  // Read the next line
+            iss.str(line); iss.clear();
+            iss >> Solver.Input.Lx >> Solver.Input.Ly;
+        } else if (line.find("w-AD") != std::string::npos) {
+            getline(inputFile, line);  // Read the next line
+            iss.str(line); iss.clear();
+            iss >> Solver.Input.w_AD >> Solver.Input.w_PPE >> Solver.Input.AD_itermax >> Solver.Input.PPE_itermax >> Solver.Input.AD_solver >> Solver.Input.PPE_solver;
+        } else if (line.find("ErrorMax") != std::string::npos) {
+            getline(inputFile, line);  // Read the next line
+            iss.str(line); iss.clear();
+            iss >> Solver.Input.ErrorMax >> Solver.Input.tmax >> Solver.Input.dt >> Solver.Input.Re >> Solver.Input.mu;
+        } else if (line.find("Write Interval") != std::string::npos) {
+            getline(inputFile, line);  // Read the next line
+            iss.str(line); iss.clear();
+            iss >> Solver.Input.Write_Interval;
+        }
+    }
+
+    inputFile.close();
+}
+
+int main() {
+    ImmerseFlow Solver;
+
+    // Read input from file
+    readInputFile("../inputs/inputs.txt", Solver);
+
+    printf("nx, ny, %i, %i\n",Solver.Input.nx, Solver.Input.ny);
+
+    // Allocate memory for CFD data
     CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.Data.u.velc, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.Data.v.velc, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.Data.p, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.gridData.x, sizeof(float) * Solver.Input.nx));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.gridData.y, sizeof(float) * Solver.Input.ny));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.ibm.iBlank, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
-
+    
+    // Initialize and print the CFD data using CUDA
     Solver.readGridData();
     Solver.initializeData();
 
+    // Free allocated memory
     CHECK_CUDA_ERROR(cudaFree(Solver.gridData.x));
     CHECK_CUDA_ERROR(cudaFree(Solver.gridData.y));
     CHECK_CUDA_ERROR(cudaFree(Solver.Data.u.velc));
     CHECK_CUDA_ERROR(cudaFree(Solver.Data.v.velc));
     CHECK_CUDA_ERROR(cudaFree(Solver.Data.p));
-    // CHECK_CUDA_ERROR(cudaFree(Solver.ibm.iBlank));
+    CHECK_CUDA_ERROR(cudaFree(Solver.ibm.iBlank));
 
     return 0;
 }

@@ -3,39 +3,10 @@
 #include "../header/globalVariables.cuh"
 #include <iostream>
 #include <fstream>
-#include <cstdlib>
+#include <sstream>
+#include <string>
 #include <cuda_runtime.h>
 
-// template <unsigned int blockSize>
-// __device__ void warpReduce(volatile float* sdata, unsigned int tid) {
-//     if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
-//     if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
-//     if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
-//     if (blockSize >= 8) sdata[tid] += sdata[tid + 4];
-//     if (blockSize >= 4) sdata[tid] += sdata[tid + 2];
-//     if (blockSize >= 2) sdata[tid] += sdata[tid + 1];
-// }
-
-// template <unsigned int blockSize>
-// __global__ void reduce6(float* g_idata, float* g_odata, unsigned int n) {
-//     extern __shared__ float sdata[];
-//     unsigned int tid = threadIdx.x;
-//     unsigned int i = blockIdx.x * (blockSize * 2) + tid;
-//     unsigned int gridSize = blockSize * 2 * gridDim.x;
-
-//     sdata[tid] = 0;
-//     while (i < n) {
-//         sdata[tid] += g_idata[i] + g_idata[i + blockSize]; i += gridSize;
-//     }
-//     __syncthreads();
-
-//     if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
-//     if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
-//     if (blockSize >= 128) { if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
-//     if (tid < 32) warpReduce<blockSize>(sdata, tid);
-//     if (tid == 0) g_odata[blockIdx.x] = sdata[0];
-//     if (tid == 0) printf("output=%f %d %d\n", g_odata[blockIdx.x], threadIdx.x, blockIdx.x);
-// }
 
 __global__ void initializeKernel(int nx, int ny, CFDData deviceData) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -136,35 +107,6 @@ void ImmerseFlow:: initializeData() {
     CHECK_CUDA_ERROR(cudaMalloc((void**)&g_idata, sizeof(float) * Input.nx*Input.ny));
     CHECK_LAST_CUDA_ERROR();
 
-
-    // //Test
-    // const int BlocksPerGrid = 2;
-    // const int ThreadsPerBlock = 64;
-
-    
-    // switch (ThreadsPerBlock)
-    // {
-    // case 512:
-    //     reduce6<512> << < BlocksPerGrid, ThreadsPerBlock >> > (Data.u.velc, g_odata, Input.nx * Input.ny); break;
-    // case 256:
-    //     reduce6<256> << < BlocksPerGrid, ThreadsPerBlock >> > (Data.u.velc, g_odata, Input.nx * Input.ny); break;
-    // case 128:
-    //     reduce6<128> << < BlocksPerGrid, ThreadsPerBlock >> > (Data.u.velc, g_odata, Input.nx * Input.ny); break;
-    // case 64:
-    //     reduce6< 64> << < BlocksPerGrid, ThreadsPerBlock >> > (Data.u.velc, g_odata, Input.nx * Input.ny); break;
-    // case 32:
-    //     reduce6< 32> << < BlocksPerGrid, ThreadsPerBlock >> > (Data.u.velc, g_odata, Input.nx * Input.ny); break;
-    // case 16:
-    //     reduce6< 16> << < BlocksPerGrid, ThreadsPerBlock >> > (Data.u.velc, g_odata, Input.nx * Input.ny); break;
-    // case 8:
-    //     reduce6< 8> << < BlocksPerGrid, ThreadsPerBlock >> > (Data.u.velc, g_odata, Input.nx * Input.ny); break;
-    // case 4:
-    //     reduce6< 4> << < BlocksPerGrid, ThreadsPerBlock >> > (Data.u.velc, g_odata, Input.nx * Input.ny); break;
-    // case 2:
-    //     reduce6< 2> << < BlocksPerGrid, ThreadsPerBlock >> > (Data.u.velc, g_odata, Input.nx * Input.ny); break;
-    // case 1:
-    //     reduce6< 1> << < BlocksPerGrid, ThreadsPerBlock >> > (Data.u.velc, g_odata, Input.nx * Input.ny); break;
-    // }
 }
 
 
