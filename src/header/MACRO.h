@@ -4,6 +4,8 @@
 #include <cuda_runtime.h>
 #include <fstream>
 
+
+
 //reference
 //https://leimao.github.io/blog/Proper-CUDA-Error-Checking/
 #define CHECK_CUDA_ERROR(val) checkCuda((val), #val, __FILE__, __LINE__)

@@ -1,13 +1,14 @@
 #ifndef GLOBALVARIABLES_CUH
 #define GLOBALVARIABLES_CUH
+#define  REALTYPE   double
 
 struct vel {
-    float* velf, * velc, * velInter;
+    REALTYPE* velf, * velc, * velInter;
 };
 
 // Define a struct to hold the CFD arrays
 struct CFDData {
-    float* p;
+    REALTYPE* p;
     vel u, v;
 };
 
@@ -18,25 +19,31 @@ struct CFDInput {
 
     //Domain Information
     int nx, ny;
-    double Lx, Ly;
+    REALTYPE Lx, Ly;
 
     //Iterative Solver Settings
     int w_AD, w_PPE, AD_itermax, PPE_itermax, AD_solver, PPE_solver;
 
     //Simulation Settings
-    double ErrorMax, tmax, dt, Re, mu;
+    REALTYPE ErrorMax, tmax, dt, Re, mu;
 
     //Data write
     int Write_Interval;
 };
 
+struct BC {
+    REALTYPE u_bc_w, u_bc_e, u_bc_n, u_bc_s,
+             v_bc_w, v_bc_e, v_bc_n, v_bc_s,
+             p_bc_w, p_bc_e, p_bc_n, p_bc_s;
+};
+
 struct Grid {
-    float* x;
-    float* y;
+    REALTYPE* x;
+    REALTYPE* y;
 };
 
 struct IBM {
-    float* iBlank;
+    REALTYPE* iBlank;
 };
 
 struct ImmerseFlow {
@@ -44,11 +51,14 @@ struct ImmerseFlow {
     CFDInput  Input;
     Grid      gridData;
     IBM       ibm;
+    BC        BcData;
     // Function prototypes
     void initializeCFDData();
     void printCFDData();
     void readGridData();
     void initializeData();
+    void allocation();
+    void freeAllocation();
 };
 
 // CUDA error checking macro

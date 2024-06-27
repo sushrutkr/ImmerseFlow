@@ -61,24 +61,14 @@ int main() {
     printf("nx, ny, %i, %i\n",Solver.Input.nx, Solver.Input.ny);
 
     // Allocate memory for CFD data
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.Data.u.velc, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.Data.v.velc, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.Data.p, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.gridData.x, sizeof(float) * Solver.Input.nx));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.gridData.y, sizeof(float) * Solver.Input.ny));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&Solver.ibm.iBlank, sizeof(float) * Solver.Input.nx * Solver.Input.ny));
-    
+
+    Solver.allocation();
+
     // Initialize and print the CFD data using CUDA
     Solver.readGridData();
     Solver.initializeData();
 
-    // Free allocated memory
-    CHECK_CUDA_ERROR(cudaFree(Solver.gridData.x));
-    CHECK_CUDA_ERROR(cudaFree(Solver.gridData.y));
-    CHECK_CUDA_ERROR(cudaFree(Solver.Data.u.velc));
-    CHECK_CUDA_ERROR(cudaFree(Solver.Data.v.velc));
-    CHECK_CUDA_ERROR(cudaFree(Solver.Data.p));
-    CHECK_CUDA_ERROR(cudaFree(Solver.ibm.iBlank));
+    Solver.freeAllocation();
 
     return 0;
 }
