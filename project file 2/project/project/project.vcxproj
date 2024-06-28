@@ -22,6 +22,9 @@
     <CudaCompile Include="..\..\..\src\include\preSim.cu" />
     <CudaCompile Include="..\..\..\src\main.cu" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{51201686-BADC-491B-83D7-92307748D88E}</ProjectGuid>
     <RootNamespace>project</RootNamespace>

@@ -63,6 +63,7 @@ __global__ void initializeKernel(int nx, int ny, CFDData deviceData) {
             deviceData.u.velf[idx] = 0.0;
             deviceData.v.velf[idx] = 0.0;
             deviceData.p[idx] = 0.0;
+            
         }
 
         
@@ -91,43 +92,47 @@ __global__ void initializeKernel(int nx, int ny, CFDData deviceData) {
 }
 
 __global__ void printKernel(int nx, int ny, CFDData deviceData) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
-    int idx = i + j * nx;
-
-    if (i < nx && j < ny) {
-        printf("u[%d,%d]: %f, v[%d,%d]: %f, p[%d,%d]: %f\n", i, j, deviceData.u.velc[idx], i, j, deviceData.v.velc[idx], i, j, deviceData.p[idx]);
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
+    
+    while (idx < nx * ny)
+    {
+       printf("u[%d,%d]: %f, v[%d,%d]: %f, p[%d,%d]: %f\n", idx/nx, idx % nx, deviceData.u.velc[idx], idx / nx, idx % nx, deviceData.v.velc[idx], idx / nx, idx % nx, deviceData.p[idx]);
+       idx = idx + nGrid;
     }
 }
 
 __global__ void iBlankComputeKernel(int nx, int ny, Grid gridData, IBM ibm) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
-    int idx = i + j * nx;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
 
-    if (i < nx && j < ny) {
+    while (idx < nx * ny)
+    {
+        int i = idx % nx;
+        int j = idx / nx;
         // Access x and y from gridData directly
-        float x = gridData.x[i];
-        float y = gridData.y[j];
+        REALTYPE x = gridData.x[i];
+        REALTYPE y = gridData.y[j];
 
         // Calculate distance from center (3, 2.5)
-        float distance = sqrtf(powf((x - 3.0f), 2) + powf((y - 2.5f), 2));
+        REALTYPE distance = sqrtf(powf((x - 3.0f), 2) + powf((y - 2.5f), 2));
 
         // Check if within radius of 0.5
-        if (distance <= 0.5f) {
-            ibm.iBlank[idx] = 1.0f; // Assuming linear indexing
+        if (distance <= 0.5) {
+            ibm.iBlank[idx] = 1.0; // Assuming linear indexing
         } else {
-            ibm.iBlank[idx] = 0.0f;
+            ibm.iBlank[idx] = 0.0;
         }
+        idx = idx + nGrid;
     }
 }
 
 
-void copyDataToHost(int nx, int ny, const Grid& gridData, const IBM& ibm, float* host_x, float* host_y, float* host_iBlank) {
+void copyDataToHost(int nx, int ny, const Grid& gridData, const IBM& ibm, REALTYPE* host_x, REALTYPE* host_y, REALTYPE* host_iBlank) {
     // Copy data from device to host
-    CHECK_CUDA_ERROR(cudaMemcpy(host_x, gridData.x, sizeof(float) * nx, cudaMemcpyDeviceToHost));
-    CHECK_CUDA_ERROR(cudaMemcpy(host_y, gridData.y, sizeof(float) * ny, cudaMemcpyDeviceToHost));
-    CHECK_CUDA_ERROR(cudaMemcpy(host_iBlank, ibm.iBlank, sizeof(float) * nx * ny, cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpy(host_x, gridData.x, sizeof(REALTYPE) * nx, cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpy(host_y, gridData.y, sizeof(REALTYPE) * ny, cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpy(host_iBlank, ibm.iBlank, sizeof(REALTYPE) * nx * ny, cudaMemcpyDeviceToHost));
 }
 
 void ImmerseFlow::allocation() {
@@ -157,29 +162,35 @@ void ImmerseFlow::freeAllocation() {
     CHECK_CUDA_ERROR(cudaFree(ibm.iBlank));
 }
 
-void ImmerseFlow:: initializeData() {
-    dim3 threadsPerBlock(16, 16);
-    dim3 blocksPerGrid((Input.nx + threadsPerBlock.x - 1) / threadsPerBlock.x, 
-                       (Input.ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
+void ImmerseFlow::CUDAQuery() {
+    cudaDeviceProp prop;    
+    cudaGetDeviceProperties(&prop, 0);
+    CUDAData.threadsPerBlock = prop.maxThreadsPerBlock;
+    //Do we need to change this for cell face case or just waste some cores
+    CUDAData.blocksPerGrid = (Input.nx * Input.ny + CUDAData.threadsPerBlock - 1) / CUDAData.threadsPerBlock;
+    printf("Maximum number of threads = %d\n", prop.maxThreadsPerBlock);
+    printf("Maximum number of blocks = %d\n", prop.maxThreadsDim[0]);
+}
 
+void ImmerseFlow:: initializeData() {
     // Initialize kernel
-    initializeKernel<<<blocksPerGrid, threadsPerBlock>>>(Input.nx, Input.ny, Data);
+    initializeKernel<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock>>>(Input.nx, Input.ny, Data);
     CHECK_CUDA_ERROR(cudaGetLastError());
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
     // Initialize iBlank to zero
-    CHECK_CUDA_ERROR(cudaMemset(ibm.iBlank, 0, sizeof(float) * Input.nx * Input.ny));
+    CHECK_CUDA_ERROR(cudaMemset(ibm.iBlank, 0, sizeof(REALTYPE) * Input.nx * Input.ny));
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
     // Compute iBlank kernel
-    iBlankComputeKernel<<<blocksPerGrid, threadsPerBlock>>>(Input.nx, Input.ny, gridData, ibm);
+    iBlankComputeKernel<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >>>(Input.nx, Input.ny, gridData, ibm);
     CHECK_CUDA_ERROR(cudaGetLastError());
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
     // Allocate host memory
-    float* host_x = (float*)malloc(sizeof(float) * Input.nx);
-    float* host_y = (float*)malloc(sizeof(float) * Input.ny);
-    float* host_iBlank = (float*)malloc(sizeof(float) * Input.nx * Input.ny);
+    REALTYPE* host_x = (REALTYPE*)malloc(sizeof(REALTYPE) * Input.nx);
+    REALTYPE* host_y = (REALTYPE*)malloc(sizeof(REALTYPE) * Input.ny);
+    REALTYPE* host_iBlank = (REALTYPE*)malloc(sizeof(REALTYPE) * Input.nx * Input.ny);
 
     // Check allocation
     if (host_x == nullptr || host_y == nullptr || host_iBlank == nullptr) {
@@ -211,10 +222,7 @@ void ImmerseFlow:: initializeData() {
     CHECK_LAST_CUDA_ERROR();
 
 
-    cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, 0);
-    printf("Maximum number of threads = %d\n", prop.maxThreadsPerBlock);
-    printf("Maximum number of blocks = %d\n", prop.maxThreadsDim[0]);
+    
 
     REALTYPE h_odata;
     
@@ -282,13 +290,13 @@ void ImmerseFlow:: initializeData() {
 
 
 void ImmerseFlow :: readGridData() {
-    float *x;
-    float *y;
+    REALTYPE *x;
+    REALTYPE*y;
     int idx, idy;
     std::ifstream infile;
 
-    x = (float*)malloc(Input.nx * sizeof(float));
-    y = (float*)malloc(Input.ny * sizeof(float));
+    x = (REALTYPE*)malloc(Input.nx * sizeof(REALTYPE));
+    y = (REALTYPE*)malloc(Input.ny * sizeof(REALTYPE));
 
     // Check if memory allocation was successful
     if (x == nullptr || y == nullptr) {
@@ -323,8 +331,8 @@ void ImmerseFlow :: readGridData() {
     infile.close();
 
     // Copy data from CPU to GPU
-    CHECK_CUDA_ERROR(cudaMemcpy(gridData.x, x, Input.nx * sizeof(float), cudaMemcpyHostToDevice));
-    CHECK_CUDA_ERROR(cudaMemcpy(gridData.y, y, Input.ny * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(gridData.x, x, Input.nx * sizeof(REALTYPE), cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(gridData.y, y, Input.ny * sizeof(REALTYPE), cudaMemcpyHostToDevice));
 
 
     // Free CPU memory

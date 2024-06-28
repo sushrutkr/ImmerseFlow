@@ -1,8 +1,13 @@
 ﻿  Compiling CUDA source file ..\..\..\src\include\preSim.cu...
+  Compiling CUDA source file ..\..\..\src\include\postSim.cu...
   
   C:\Users\khj06\Desktop\ImmerseFlow\project file 2\project\project>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\bin\nvcc.exe" -gencode=arch=compute_52,code=\"sm_52,compute_52\" --use-local-env -ccbin "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\bin\HostX64\x64" -x cu   -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\include"  -G   --keep-dir x64\Debug  -maxrregcount=0   --machine 64 --compile -cudart static  -g  -DWIN32 -DWIN64 -D_DEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -Xcompiler "/Fdx64\Debug\vc143.pdb" -o "C:\Users\khj06\Desktop\ImmerseFlow\project file 2\project\project\x64\Debug\preSim.cu.obj" "C:\Users\khj06\Desktop\ImmerseFlow\src\include\preSim.cu" 
+  
+  C:\Users\khj06\Desktop\ImmerseFlow\project file 2\project\project>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\bin\nvcc.exe" -gencode=arch=compute_52,code=\"sm_52,compute_52\" --use-local-env -ccbin "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\bin\HostX64\x64" -x cu   -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\include"  -G   --keep-dir x64\Debug  -maxrregcount=0   --machine 64 --compile -cudart static  -g  -DWIN32 -DWIN64 -D_DEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -Xcompiler "/Fdx64\Debug\vc143.pdb" -o "C:\Users\khj06\Desktop\ImmerseFlow\project file 2\project\project\x64\Debug\postSim.cu.obj" "C:\Users\khj06\Desktop\ImmerseFlow\src\include\postSim.cu" 
+  postSim.cu
+  tmpxft_00003090_00000000-7_postSim.cudafe1.cpp
   preSim.cu
-  tmpxft_0000497c_00000000-7_preSim.cudafe1.cpp
+  tmpxft_00003934_00000000-7_preSim.cudafe1.cpp
      Creating library C:\Users\khj06\Desktop\ImmerseFlow\project file 2\project\x64\Debug\project.lib and object C:\Users\khj06\Desktop\ImmerseFlow\project file 2\project\x64\Debug\project.exp
 LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
   project.vcxproj -> C:\Users\khj06\Desktop\ImmerseFlow\project file 2\project\x64\Debug\project.exe

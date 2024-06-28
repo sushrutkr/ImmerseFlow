@@ -46,12 +46,17 @@ struct IBM {
     REALTYPE* iBlank;
 };
 
+struct CUDAInfo {
+    int blocksPerGrid, threadsPerBlock;
+};
+
 struct ImmerseFlow {
     CFDData   Data;
     CFDInput  Input;
     Grid      gridData;
     IBM       ibm;
     BC        BcData;
+    CUDAInfo  CUDAData;
     // Function prototypes
     void initializeCFDData();
     void printCFDData();
@@ -59,6 +64,7 @@ struct ImmerseFlow {
     void initializeData();
     void allocation();
     void freeAllocation();
+    void CUDAQuery();
 };
 
 // CUDA error checking macro

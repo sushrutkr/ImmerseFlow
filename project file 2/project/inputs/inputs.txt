@@ -4,7 +4,7 @@ Restart     Restart_Time
 
 ___________________________| Domain Information |________________________________
 nx      ny 
-200     200
+181     129
 
 Lx      Ly 
 10      5                                      

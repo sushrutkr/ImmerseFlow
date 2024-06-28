@@ -61,7 +61,7 @@ int main() {
     printf("nx, ny, %i, %i\n",Solver.Input.nx, Solver.Input.ny);
 
     // Allocate memory for CFD data
-
+    Solver.CUDAQuery();
     Solver.allocation();
 
     // Initialize and print the CFD data using CUDA
