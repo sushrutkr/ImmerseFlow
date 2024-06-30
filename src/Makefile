@@ -1,40 +1,38 @@
-# Compiler and flags
+# Define variables
 NVCC = nvcc
-CXXFLAGS = -arch=sm_60 -std=c++11
-
-# Directories
-INCDIR = include
-SRCDIR = src
+SRCDIR = include
 OBJDIR = obj
-BINDIR = bin
+TARGET = immerseFlow
 
 # Source files
-SRCFILES = $(wildcard $(SRCDIR)/*.cu) $(wildcard $(INCDIR)/*.cu)
-OBJFILES = $(patsubst $(SRCDIR)/%.cu, $(OBJDIR)/%.o, $(wildcard $(SRCDIR)/*.cu)) $(patsubst $(INCDIR)/%.cu, $(OBJDIR)/%.o, $(wildcard $(INCDIR)/*.cu))
+SRC = $(SRCDIR)/globalVariables.cu $(SRCDIR)/preSim.cu $(SRCDIR)/postSim.cu main.cu
 
-# Executable name
-EXEC = $(BINDIR)/immerseFlow
+# Object files
+OBJ = $(OBJDIR)/globalVariables.o $(OBJDIR)/preSim.o $(OBJDIR)/postSim.o $(OBJDIR)/main.o
 
 # Default target
-all: $(EXEC)
+all: $(TARGET)
 
-# Build executable
-$(EXEC): $(OBJFILES)
-	mkdir -p $(BINDIR)
-	$(NVCC) $(CXXFLAGS) -o $@ $^ -run
+# Compile source files to object files
+$(OBJDIR)/globalVariables.o: $(SRCDIR)/globalVariables.cu
+	$(NVCC) -c $< -o $@
 
-# Compile CUDA source files from src directory
-$(OBJDIR)/%.o: $(SRCDIR)/%.cu
-	mkdir -p $(OBJDIR)
-	$(NVCC) $(CXXFLAGS) -c -o $@ $<
+$(OBJDIR)/preSim.o: $(SRCDIR)/preSim.cu
+	$(NVCC) -c $< -o $@
 
-# Compile CUDA source files from include directory
-$(OBJDIR)/%.o: $(INCDIR)/%.cu
-	mkdir -p $(OBJDIR)
-	$(NVCC) $(CXXFLAGS) -c -o $@ $<
+$(OBJDIR)/postSim.o: $(SRCDIR)/postSim.cu
+	$(NVCC) -c $< -o $@
 
-# Clean
+$(OBJDIR)/main.o: main.cu
+	$(NVCC) -c $< -o $@
+
+# Link object files to create the final executable
+$(TARGET): $(OBJ)
+	$(NVCC) $^ -o $@ -run
+
+# Clean up
 clean:
-	rm -rf $(OBJDIR)/* $(BINDIR)/*
+	rm -f $(OBJDIR)/*.o $(TARGET)
 
+# Phony targets
 .PHONY: all clean

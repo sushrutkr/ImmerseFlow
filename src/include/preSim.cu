@@ -111,8 +111,8 @@ __global__ void iBlankComputeKernel(int nx, int ny, Grid gridData, IBM ibm) {
         int i = idx % nx;
         int j = idx / nx;
         // Access x and y from gridData directly
-        REALTYPE x = gridData.x[i];
-        REALTYPE y = gridData.y[j];
+        REALTYPE x = gridData.xc[i];
+        REALTYPE y = gridData.yc[j];
 
         // Calculate distance from center (3, 2.5)
         REALTYPE distance = sqrtf(powf((x - 3.0f), 2) + powf((y - 2.5f), 2));
@@ -127,11 +127,19 @@ __global__ void iBlankComputeKernel(int nx, int ny, Grid gridData, IBM ibm) {
     }
 }
 
+__global__ void printGridDataKernel(REALTYPE *xf, int nNodes) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
+    if (idx < nNodes) {
+        printf("gridData[%d] = %f\n", idx, xf[idx]);
+        idx = idx + nGrid;
+    }
+}
 
 void copyDataToHost(int nx, int ny, const Grid& gridData, const IBM& ibm, REALTYPE* host_x, REALTYPE* host_y, REALTYPE* host_iBlank) {
     // Copy data from device to host
-    CHECK_CUDA_ERROR(cudaMemcpy(host_x, gridData.x, sizeof(REALTYPE) * nx, cudaMemcpyDeviceToHost));
-    CHECK_CUDA_ERROR(cudaMemcpy(host_y, gridData.y, sizeof(REALTYPE) * ny, cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpy(host_x, gridData.xc, sizeof(REALTYPE) * nx, cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpy(host_y, gridData.yc, sizeof(REALTYPE) * ny, cudaMemcpyDeviceToHost));
     CHECK_CUDA_ERROR(cudaMemcpy(host_iBlank, ibm.iBlank, sizeof(REALTYPE) * nx * ny, cudaMemcpyDeviceToHost));
 }
 
@@ -143,8 +151,12 @@ void ImmerseFlow::allocation() {
     CHECK_CUDA_ERROR(cudaMalloc((void**)&Data.u.velf, sizeof(REALTYPE) * Input.nx * (Input.ny-2)));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&Data.v.velf, sizeof(REALTYPE) * (Input.nx-2) * Input.ny));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&Data.p, sizeof(REALTYPE) * Input.nx * Input.ny));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&gridData.x, sizeof(REALTYPE) * Input.nx));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&gridData.y, sizeof(REALTYPE) * Input.ny));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&gridData.xc, sizeof(REALTYPE) * Input.nx));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&gridData.yc, sizeof(REALTYPE) * Input.ny));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&gridData.xf, sizeof(REALTYPE) * Input.nxf));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&gridData.yf, sizeof(REALTYPE) * Input.nyf));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&gridData.dx, sizeof(REALTYPE) * Input.nx * Input.ny));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&gridData.dy, sizeof(REALTYPE) * Input.nx * Input.ny));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&ibm.iBlank, sizeof(REALTYPE) * Input.nx * Input.ny));
 }
 
@@ -157,8 +169,10 @@ void ImmerseFlow::freeAllocation() {
     CHECK_CUDA_ERROR(cudaFree(Data.u.velf));
     CHECK_CUDA_ERROR(cudaFree(Data.v.velf));
     CHECK_CUDA_ERROR(cudaFree(Data.p));
-    CHECK_CUDA_ERROR(cudaFree(gridData.x));
-    CHECK_CUDA_ERROR(cudaFree(gridData.y));
+    CHECK_CUDA_ERROR(cudaFree(gridData.xc));
+    CHECK_CUDA_ERROR(cudaFree(gridData.yc));
+    CHECK_CUDA_ERROR(cudaFree(gridData.xf));
+    CHECK_CUDA_ERROR(cudaFree(gridData.yf));
     CHECK_CUDA_ERROR(cudaFree(ibm.iBlank));
 }
 
@@ -183,6 +197,7 @@ void ImmerseFlow:: initializeData() {
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
     // Compute iBlank kernel
+    // printGridDataKernel<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >>>(gridData.xc, Input.nx);
     iBlankComputeKernel<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >>>(Input.nx, Input.ny, gridData, ibm);
     CHECK_CUDA_ERROR(cudaGetLastError());
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());
@@ -282,24 +297,28 @@ void ImmerseFlow:: initializeData() {
     }
 
     CHECK_CUDA_ERROR(cudaMemcpy(&h_odata, g_odata, sizeof(REALTYPE) * 1, cudaMemcpyDeviceToHost));
-    printf("%f\n", h_odata);
-
 }
 
-
-
-
-void ImmerseFlow :: readGridData() {
-    REALTYPE *x;
-    REALTYPE*y;
+void ImmerseFlow::readGridData() {
+    REALTYPE *xf;
+    REALTYPE *yf;
     int idx, idy;
     std::ifstream infile;
 
-    x = (REALTYPE*)malloc(Input.nx * sizeof(REALTYPE));
-    y = (REALTYPE*)malloc(Input.ny * sizeof(REALTYPE));
+    xf = (REALTYPE*)malloc(Input.nxf * sizeof(REALTYPE));
+    yf = (REALTYPE*)malloc(Input.nyf * sizeof(REALTYPE));
+
+    REALTYPE *x_centers = (REALTYPE*)malloc(Input.nx * sizeof(REALTYPE));
+    REALTYPE *y_centers = (REALTYPE*)malloc(Input.ny * sizeof(REALTYPE));
 
     // Check if memory allocation was successful
-    if (x == nullptr || y == nullptr) {
+    if (xf == nullptr || yf == nullptr) {
+        std::cerr << "Memory allocation failed" << std::endl;
+        exit(1);
+    }
+
+    // Check if memory allocation was successful
+    if (x_centers == nullptr || y_centers == nullptr) {
         std::cerr << "Memory allocation failed" << std::endl;
         exit(1);
     }
@@ -308,12 +327,12 @@ void ImmerseFlow :: readGridData() {
     infile.open("../inputs/xgrid.dat");
     if (!infile) {
         std::cerr << "Error opening xgrid.dat" << std::endl;
-        free(x);
-        free(y);
+        free(xf);
+        free(yf);
         exit(1);
     }
-    for (int i = 0; i < Input.nx; i++) {
-        infile >> idx >> x[i];
+    for (int i = 0; i < Input.nxf; i++) {
+        infile >> idx >> xf[i];
     }
     infile.close();
 
@@ -321,21 +340,48 @@ void ImmerseFlow :: readGridData() {
     infile.open("../inputs/ygrid.dat");
     if (!infile) {
         std::cerr << "Error opening ygrid.dat" << std::endl;
-        free(x);
-        free(y);
+        free(xf);
+        free(yf);
         exit(1);
     }
-    for (int i = 0; i < Input.ny; i++) {
-        infile >> idy >> y[i];
+    for (int i = 0; i < Input.nyf; i++) {
+        infile >> idy >> yf[i];
     }
     infile.close();
 
-    // Copy data from CPU to GPU
-    CHECK_CUDA_ERROR(cudaMemcpy(gridData.x, x, Input.nx * sizeof(REALTYPE), cudaMemcpyHostToDevice));
-    CHECK_CUDA_ERROR(cudaMemcpy(gridData.y, y, Input.ny * sizeof(REALTYPE), cudaMemcpyHostToDevice));
+    // Calculate x centers
+    for (int i = 1; i < Input.nx-1; i++) {
+        x_centers[i] = (xf[i-1] + xf[i]) / 2.0;
+    }
 
+    // Calculate y centers
+    for (int i = 1; i < Input.ny-1; i++) {
+        y_centers[i] = (yf[i-1] + yf[i]) / 2.0;
+    }
+
+    // Handle boundary conditions
+    x_centers[0] = -1 * x_centers[1];
+    y_centers[0] = -1 * y_centers[1];
+    x_centers[Input.nx - 1] = xf[Input.nxf - 1] + (xf[Input.nxf - 1] - x_centers[Input.nx - 2]);
+    y_centers[Input.ny - 1] = yf[Input.nyf - 1] + (yf[Input.nyf - 1] - y_centers[Input.ny - 2]);
+
+    // for (int i = 0; i < Input.nxf; ++i) {
+    //     std::cout << "x[" << i << "] = " << xf[i] << std::endl;
+    // }
+
+    // Copy data from CPU to GPU
+    CHECK_CUDA_ERROR(cudaMemcpy(gridData.xf, xf, Input.nxf * sizeof(REALTYPE), cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(gridData.yf, yf, Input.nyf * sizeof(REALTYPE), cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(gridData.xc, x_centers, Input.nx * sizeof(REALTYPE), cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(gridData.yc, y_centers, Input.ny * sizeof(REALTYPE), cudaMemcpyHostToDevice));
+
+    // int blockSize = 256;
+    // int numBlocks = (Input.nxf + blockSize - 1) / blockSize;
+    // printGridDataKernel<<<numBlocks, blockSize>>>(gridData.xc, Input.nx);
 
     // Free CPU memory
-    free(x);
-    free(y);
+    free(xf);
+    free(yf);
+    free(x_centers);
+    free(y_centers);
 }

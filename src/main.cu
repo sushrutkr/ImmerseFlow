@@ -50,6 +50,10 @@ void readInputFile(const std::string& filename, ImmerseFlow& Solver) {
     }
 
     inputFile.close();
+    Solver.Input.nxf = Solver.Input.nx + 1;
+    Solver.Input.nyf = Solver.Input.ny + 1;
+    Solver.Input.nx += 2;
+    Solver.Input.ny += 2;
 }
 
 int main() {
@@ -57,8 +61,9 @@ int main() {
 
     // Read input from file
     readInputFile("../inputs/inputs.txt", Solver);
+     
 
-    printf("nx, ny, %i, %i\n",Solver.Input.nx, Solver.Input.ny);
+    printf("nx, ny, %i, %i\n",Solver.Input.nxf, Solver.Input.nyf);
 
     // Allocate memory for CFD data
     Solver.CUDAQuery();

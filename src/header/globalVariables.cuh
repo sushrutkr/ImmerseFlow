@@ -19,6 +19,7 @@ struct CFDInput {
 
     //Domain Information
     int nx, ny;
+    int nxf, nyf;
     REALTYPE Lx, Ly;
 
     //Iterative Solver Settings
@@ -38,8 +39,12 @@ struct BC {
 };
 
 struct Grid {
-    REALTYPE* x;
-    REALTYPE* y;
+    REALTYPE* xf;
+    REALTYPE* yf;
+    REALTYPE* xc;
+    REALTYPE* yc;
+    REALTYPE* dx, * dy;
+
 };
 
 struct IBM {
@@ -61,6 +66,7 @@ struct ImmerseFlow {
     void initializeCFDData();
     void printCFDData();
     void readGridData();
+    void calculateCellCenters();
     void initializeData();
     void allocation();
     void freeAllocation();
