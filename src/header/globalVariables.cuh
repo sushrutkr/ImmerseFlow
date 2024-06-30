@@ -66,7 +66,6 @@ struct ImmerseFlow {
     void initializeCFDData();
     void printCFDData();
     void readGridData();
-    void calculateCellCenters();
     void initializeData();
     void allocation();
     void freeAllocation();
