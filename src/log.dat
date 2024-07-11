@@ -1,1 +1,5 @@
-make: Nothing to be done for 'all'.
+nvcc -c include/preSim.cu -o obj/preSim.o
+nvcc obj/globalVariables.o obj/preSim.o obj/postSim.o obj/main.o -o immerseFlow -run
+nx, ny, 51, 51
+Maximum number of threads = 1024
+Maximum number of blocks = 1024

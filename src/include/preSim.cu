@@ -268,8 +268,6 @@ void ImmerseFlow:: initializeData() {
     CHECK_CUDA_ERROR(cudaGetLastError());
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
-    printGridDataKernel<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock>>>(gridData.yc, Input.ny);
-
     // Initialize iBlank to zero
     CHECK_CUDA_ERROR(cudaMemset(ibm.iBlank, 0, sizeof(REALTYPE) * Input.nx * Input.ny));
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());
@@ -433,7 +431,6 @@ void ImmerseFlow::readGridData() {
     free(y_centers);
     free(dx);
     free(dy);
-    printGridDataKernel<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock>>>(gridData.yc, Input.ny);
 }
 
 void ImmerseFlow::PPESolver() {
@@ -460,8 +457,6 @@ void ImmerseFlow::PPESolver() {
     CHECK_CUDA_ERROR(cudaGetLastError());
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());      
     
-    printf("p = %f, %f \n",Data.p[idx(1,1,Input.nx)], Data.p[idx(1,0,Input.nx)]);
-
     for (int iter = 0; iter < Input.PPE_itermax; iter++) {
         jacobiIteration<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock>>>(Input.nx, Input.ny, gridData, coeff, Data.p, pTemp);
         CHECK_CUDA_ERROR(cudaDeviceSynchronize());
@@ -478,9 +473,7 @@ void ImmerseFlow::PPESolver() {
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
     //Set Boundary Conditions
-    // set_pressure_BC<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock>>>(Input.nx, Input.ny, Data.p);
-
-    printf("p = %f, %f \n",Data.p[idx(1,1,Input.nx)], Data.p[idx(1,0,Input.nx)]);
+    set_pressure_BC<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock>>>(Input.nx, Input.ny, Data.p);
 
     saveDataToFile(Input.nx, Input.ny, gridData.xc, gridData.yc, Data.p, "../results/p.dat");
 
