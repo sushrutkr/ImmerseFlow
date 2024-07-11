@@ -4,15 +4,15 @@ Restart     Restart_Time
 
 ___________________________| Domain Information |________________________________
 nx      ny 
-180     128
+50      50
 
 Lx      Ly 
 10      5                                      
 
 
 ________________________| Iterative Solver Settings |____________________________
-w-AD    w-PPE   AD-itermax  PPE-itermax    AD_Solver PPE_Solver(1. Point GS, 2. Line SOR)
-1       1       25          500           1         1
+w-AD    w-PPE   AD-itermax  PPE-itermax  AD_Solver PPE_Solver(1. Point GS, 2. Line SOR)
+1       1       25          100000          1         1
 
 
 ___________________________| Simulation Settings |_______________________________

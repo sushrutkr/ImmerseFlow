@@ -55,6 +55,12 @@ struct CUDAInfo {
     int blocksPerGrid, threadsPerBlock;
 };
 
+struct coeffPPE {
+    REALTYPE* coeff_dx2_p1,* coeff_dx2_m1,
+            * coeff_dy2_p1,* coeff_dy2_m1;
+    REALTYPE* coeff_ppe;
+};
+
 struct ImmerseFlow {
     CFDData   Data;
     CFDInput  Input;
@@ -70,6 +76,7 @@ struct ImmerseFlow {
     void allocation();
     void freeAllocation();
     void CUDAQuery();
+    void PPESolver();
 };
 
 // CUDA error checking macro

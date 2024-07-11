@@ -61,5 +61,5 @@ def plot_data(a,b,title,fname,label):
     # matplotlib.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
     return
 
-xq,yq,data = get_data('final_results.dat',3,182,130)
+xq,yq,data = get_data('p.dat',3,182,130)
 plot_contour(xq,yq,data,r'$u$ ($256\times 256$ Grid - Gauss-Seidel Method)  ','t.png')

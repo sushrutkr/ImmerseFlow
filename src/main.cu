@@ -72,7 +72,7 @@ int main() {
     // Initialize and print the CFD data using CUDA
     Solver.readGridData();
     Solver.initializeData();
-
+    Solver.PPESolver();
     Solver.freeAllocation();
 
     return 0;
