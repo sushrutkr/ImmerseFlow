@@ -77,6 +77,7 @@ struct ImmerseFlow {
     void freeAllocation();
     void CUDAQuery();
     void PPESolver();
+    void Reduction(REALTYPE* input, REALTYPE* output);
 };
 
 // CUDA error checking macro

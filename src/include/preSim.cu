@@ -158,6 +158,25 @@ __global__ void jacobiIteration(int nx, int ny, Grid gridData, coeffPPE coeff, R
     }
 }
 
+__global__ void Compute_Residual(int nx, int ny, Grid gridData, coeffPPE coeff, REALTYPE* p, REALTYPE* Residual) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
+
+    while (id < nx * ny) {
+        int i = id % nx;
+        int j = id / nx;
+
+        if (i > 0 && i < nx - 1 && j > 0 && j < ny - 1) {
+           Residual[id] = p[id] * coeff.coeff_ppe[id] + 
+                p[(i + 1) + j * nx] * coeff.coeff_dx2_p1[id] +
+                p[(i - 1) + j * nx] * coeff.coeff_dx2_m1[id] +
+                p[i + (j + 1) * nx] * coeff.coeff_dy2_p1[id] +
+                p[i + (j - 1) * nx] * coeff.coeff_dy2_m1[id] ;
+        }
+        id += nGrid;
+    }
+}
+
 __global__ void set_pressure_BC(int nx, int ny, REALTYPE *p){
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     int nGrid = blockDim.x * gridDim.x;
@@ -435,11 +454,12 @@ void ImmerseFlow::readGridData() {
 
 void ImmerseFlow::PPESolver() {
 
-    REALTYPE* pTemp;
+    REALTYPE* pTemp, * pResidue;
     
     coeffPPE coeff;
     
     CHECK_CUDA_ERROR(cudaMallocManaged(&pTemp, sizeof(REALTYPE) * Input.nx * Input.ny));
+    CHECK_CUDA_ERROR(cudaMallocManaged(&pResidue, sizeof(REALTYPE) * Input.nx * Input.ny));
     CHECK_CUDA_ERROR(cudaMallocManaged(&coeff.coeff_ppe, Input.nx * Input.ny * sizeof(REALTYPE)));
     CHECK_CUDA_ERROR(cudaMallocManaged(&coeff.coeff_dx2_p1, Input.nx * Input.ny * sizeof(REALTYPE)));
     CHECK_CUDA_ERROR(cudaMallocManaged(&coeff.coeff_dx2_m1, Input.nx * Input.ny * sizeof(REALTYPE)));
@@ -457,16 +477,27 @@ void ImmerseFlow::PPESolver() {
     CHECK_CUDA_ERROR(cudaGetLastError());
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());      
     
-    for (int iter = 0; iter < Input.PPE_itermax; iter++) {
+    //Setting arbitrary large number to start iterations
+    REALTYPE Residual = 1.0;
+
+    int iter=0;
+    while(Residual > pow(10.0,-6.0) && iter < Input.PPE_itermax) {
+    //for (int iter = 0; iter < Input.PPE_itermax; iter++) {
         jacobiIteration<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock>>>(Input.nx, Input.ny, gridData, coeff, Data.p, pTemp);
         CHECK_CUDA_ERROR(cudaDeviceSynchronize());
-        
-        // Calculate Error
-
+       
         // Swap pointers
         REALTYPE *temp = Data.p;
         Data.p = pTemp;
         pTemp = temp;
+
+        Compute_Residual << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, Data.p, pResidue);
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+        Reduction(pResidue, &Residual);
+        
+        iter += 1;
+        printf("iter = %d %f\n", iter, Residual);
     }
     
     CHECK_CUDA_ERROR(cudaGetLastError());
@@ -483,4 +514,71 @@ void ImmerseFlow::PPESolver() {
     CHECK_CUDA_ERROR(cudaFree(coeff.coeff_dx2_m1));
     CHECK_CUDA_ERROR(cudaFree(coeff.coeff_dy2_p1));
     CHECK_CUDA_ERROR(cudaFree(coeff.coeff_dy2_m1));
+}
+
+void ImmerseFlow::Reduction(REALTYPE *input, REALTYPE* Residual)
+{
+    REALTYPE* g_odata, * g_odata2;
+
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&g_odata, sizeof(REALTYPE) * CUDAData.threadsPerBlock));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&g_odata2, sizeof(REALTYPE) * CUDAData.threadsPerBlock));
+    CHECK_LAST_CUDA_ERROR();
+
+    // Calculate Error
+    switch (CUDAData.threadsPerBlock)
+    {
+    case 1024:
+        reduce6<1024> << < CUDAData.blocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (input, g_odata, Input.nx * Input.ny); break;
+    case 512:
+        reduce6<512> << < CUDAData.blocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (input, g_odata, Input.nx * Input.ny); break;
+    case 256:
+        reduce6<256> << < CUDAData.blocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (input, g_odata, Input.nx * Input.ny); break;
+    case 128:
+        reduce6<128> << < CUDAData.blocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (input, g_odata, Input.nx * Input.ny); break;
+    case 64:
+        reduce6< 64> << < CUDAData.blocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (input, g_odata, Input.nx * Input.ny); break;
+    case 32:
+        reduce6< 32> << < CUDAData.blocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (input, g_odata, Input.nx * Input.ny); break;
+    case 16:
+        reduce6< 16> << < CUDAData.blocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (input, g_odata, Input.nx * Input.ny); break;
+    case 8:
+        reduce6< 8> << < CUDAData.blocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (input, g_odata, Input.nx * Input.ny); break;
+    case 4:
+        reduce6< 4> << < CUDAData.blocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (input, g_odata, Input.nx * Input.ny); break;
+    case 2:
+        reduce6< 2> << < CUDAData.blocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (input, g_odata, Input.nx * Input.ny); break;
+    case 1:
+        reduce6< 1> << < CUDAData.blocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (input, g_odata, Input.nx * Input.ny); break;
+    }
+
+    int BlocksPerGrid = 1;
+
+
+    switch (CUDAData.threadsPerBlock)
+    {
+    case 1024:
+        reduce6<1024> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+    case 512:
+        reduce6<512> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+    case 256:
+        reduce6<256> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+    case 128:
+        reduce6<128> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+    case 64:
+        reduce6< 64> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+    case 32:
+        reduce6< 32> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+    case 16:
+        reduce6< 16> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+    case 8:
+        reduce6< 8> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+    case 4:
+        reduce6< 4> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+    case 2:
+        reduce6< 2> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+    case 1:
+        reduce6< 1> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+    }
+
+    CHECK_CUDA_ERROR(cudaMemcpy(Residual, g_odata2, sizeof(REALTYPE) * 1, cudaMemcpyDeviceToHost));
 }
