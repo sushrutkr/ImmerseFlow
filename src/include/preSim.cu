@@ -557,27 +557,27 @@ void ImmerseFlow::Reduction(REALTYPE *input, REALTYPE* Residual)
     switch (CUDAData.threadsPerBlock)
     {
     case 1024:
-        reduce6<1024> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+        reduce6<1024> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
     case 512:
-        reduce6<512> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+        reduce6<512> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
     case 256:
-        reduce6<256> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+        reduce6<256> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
     case 128:
-        reduce6<128> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+        reduce6<128> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
     case 64:
-        reduce6< 64> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+        reduce6< 64> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
     case 32:
-        reduce6< 32> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+        reduce6< 32> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
     case 16:
-        reduce6< 16> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+        reduce6< 16> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
     case 8:
-        reduce6< 8> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+        reduce6< 8> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
     case 4:
-        reduce6< 4> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+        reduce6< 4> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
     case 2:
-        reduce6< 2> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+        reduce6< 2> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
     case 1:
-        reduce6< 1> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, Input.nx * Input.ny); break;
+        reduce6< 1> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
     }
 
     CHECK_CUDA_ERROR(cudaMemcpy(Residual, g_odata2, sizeof(REALTYPE) * 1, cudaMemcpyDeviceToHost));
