@@ -497,7 +497,7 @@ void ImmerseFlow::PPESolver() {
         Reduction(pResidue, &Residual);
         
         iter += 1;
-        printf("iter = %d %f\n", iter, Residual);
+        // printf("iter = %d %f\n", iter, Residual);
     }
     
     CHECK_CUDA_ERROR(cudaGetLastError());

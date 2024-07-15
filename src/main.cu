@@ -56,7 +56,22 @@ void readInputFile(const std::string& filename, ImmerseFlow& Solver) {
     Solver.Input.ny += 2;
 }
 
+void printLargeText() {
+    std::string text = R"(
+  _____                                                __  _                               
+ |_   _|                                              / _|| |                   _      _   
+   | |   _ __ ___   _ __ ___    ___  _ __  ___   ___ | |_ | |  ___ __      __ _| |_  _| |_ 
+   | |  | '_ ` _ \ | '_ ` _ \  / _ \| '__|/ __| / _ \|  _|| | / _ \\ \ /\ / /|_   _||_   _|
+  _| |_ | | | | | || | | | | ||  __/| |   \__ \|  __/| |  | || (_) |\ V  V /   |_|    |_|  
+ |_____||_| |_| |_||_| |_| |_| \___||_|   |___/ \___||_|  |_| \___/  \_/\_/                
+                                                                                           
+                                                                                           
+)";
+    std::cout << text << std::endl;
+}
+
 int main() {
+    printLargeText();
     ImmerseFlow Solver;
 
     // Read input from file
