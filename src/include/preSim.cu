@@ -37,6 +37,7 @@ __global__ void reduce6(REALTYPE* g_idata, REALTYPE* g_odata, unsigned int n) {
         else
         {
             sdata[tid] += g_idata[i]; i += gridSize;
+            
         }
     }
 
@@ -47,8 +48,7 @@ __global__ void reduce6(REALTYPE* g_idata, REALTYPE* g_odata, unsigned int n) {
     if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
     if (blockSize >= 128) { if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
     if (tid < 32) warpReduce<blockSize>(sdata, tid);
-    if (tid == 0) g_odata[blockIdx.x] = sdata[0];
-    
+    if (tid == 0) g_odata[blockIdx.x] = sdata[0]; 
 }
 
 
@@ -119,12 +119,15 @@ __global__ void iBlankComputeKernel(int nx, int ny, Grid gridData, IBM ibm) {
         // Calculate distance from center (3, 2.5)
         REALTYPE distance = sqrtf(powf((x - 3.0f), 2) + powf((y - 2.5f), 2));
 
-        // Check if within radius of 0.5
-        if (distance <= 0.5) {
-            ibm.iBlank[id] = 1.0; // Assuming linear indexing
-        } else {
-            ibm.iBlank[id] = 0.0;
-        }
+        //// Check if within radius of 0.5
+        //if (distance <= 0.5) {
+        //    ibm.iBlank[id] = 0.0; // Assuming linear indexing
+        //} else {
+        //    ibm.iBlank[id] = 1.0;
+        //}
+
+        // TEST
+        ibm.iBlank[id] = 1.0;
         id = id + nGrid;
     }
 }
@@ -167,15 +170,17 @@ __global__ void Compute_Residual(int nx, int ny, Grid gridData, coeffPPE coeff, 
         int j = id / nx;
 
         if (i > 0 && i < nx - 1 && j > 0 && j < ny - 1) {
-           Residual[id] = p[id] * coeff.coeff_ppe[id] + 
+            Residual[id] = p[id] * coeff.coeff_ppe[id] +
                 p[(i + 1) + j * nx] * coeff.coeff_dx2_p1[id] +
                 p[(i - 1) + j * nx] * coeff.coeff_dx2_m1[id] +
                 p[i + (j + 1) * nx] * coeff.coeff_dy2_p1[id] +
-                p[i + (j - 1) * nx] * coeff.coeff_dy2_m1[id] ;
+                p[i + (j - 1) * nx] * coeff.coeff_dy2_m1[id];
         }
         id += nGrid;
     }
 }
+
+
 
 __global__ void set_pressure_BC(int nx, int ny, REALTYPE *p){
     int id = blockIdx.x * blockDim.x + threadIdx.x;
@@ -274,10 +279,14 @@ void ImmerseFlow::CUDAQuery() {
     cudaDeviceProp prop;    
     cudaGetDeviceProperties(&prop, 0);
     CUDAData.threadsPerBlock = prop.maxThreadsPerBlock;
+    CUDAData.threadsPerBlock = 128;
     //Do we need to change this for cell face case or just waste some cores
     CUDAData.blocksPerGrid = (Input.nx * Input.ny + CUDAData.threadsPerBlock - 1) / CUDAData.threadsPerBlock;
     printf("Maximum number of threads = %d\n", prop.maxThreadsPerBlock);
     printf("Maximum number of blocks = %d\n", prop.maxThreadsDim[0]);
+
+    printf("Current number of threads and blocks = %d %d\n", CUDAData.threadsPerBlock, CUDAData.blocksPerGrid);
+   
 }
 
 void ImmerseFlow:: initializeData() {
@@ -516,13 +525,400 @@ void ImmerseFlow::PPESolver() {
     CHECK_CUDA_ERROR(cudaFree(coeff.coeff_dy2_m1));
 }
 
+__global__ void calculateADCoefficients(int nx, int ny, Grid gridData, REALTYPE dt, coefficient coeff, REALTYPE Re) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
+
+    while (id < nx * ny) {
+        int i = id % nx;
+        int j = id / nx;
+
+        coeff.coeff[id] = 1;
+        coeff.coeff_dx2_m1[id] = 1;
+        coeff.coeff_dx2_p1[id] = 1;
+        coeff.coeff_dy2_m1[id] = 1;
+        coeff.coeff_dy2_p1[id] = 1;
+
+        if (i > 0 && i < nx - 1 && j > 0 && j < ny - 1) {
+            REALTYPE dx_i = gridData.dx[idx(i, j, nx)];
+            REALTYPE dx_ip1 = gridData.dx[(i + 1) + j * nx];
+            REALTYPE dx_im1 = gridData.dx[(i - 1) + j * nx];
+            REALTYPE dy_j = gridData.dy[idx(i, j, nx)];
+            REALTYPE dy_jp1 = gridData.dy[i + (j + 1) * nx];
+            REALTYPE dy_jm1 = gridData.dy[i + (j - 1) * nx];
+
+            coeff.coeff[id] = 1.0 + (dt / Re) * ((2 / (dx_i * (dx_i + dx_ip1))) + (2 / (dx_i * (dx_i + dx_im1))))
+                                  + (dt / Re) * ((2 / (dy_j * (dy_j + dy_jp1))) + (2 / (dy_j * (dy_j + dy_jm1))));
+            coeff.coeff_dx2_m1[id] = (dt / Re) * (2 / (dx_i * (dx_i + dx_im1)));
+            coeff.coeff_dx2_p1[id] = (dt / Re) * (2 / (dx_i * (dx_i + dx_ip1)));
+            coeff.coeff_dy2_m1[id] = (dt / Re) * (2 / (dy_j * (dy_j + dy_jm1)));
+            coeff.coeff_dy2_p1[id] = (dt / Re) * (2 / (dy_j * (dy_j + dy_jp1)));
+        }
+        
+        id += nGrid;
+    }
+}
+
+__global__ void ADSource(int nx, int ny, Grid gridData, REALTYPE dt, REALTYPE* u, REALTYPE* v, REALTYPE* uf, REALTYPE* vf,
+                          REALTYPE* sx, REALTYPE* sy) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
+
+    while (id < nx * ny) {
+        int i = id % nx;
+        int j = id / nx;
+
+        sx[id] = 0.0;
+        sy[id] = 0.0;
+
+        if (i > 0 && i < nx - 1 && j > 0 && j < ny - 1) {
+            REALTYPE dx_i = gridData.dx[idx(i, j, nx)];
+            REALTYPE dx_ip1 = gridData.dx[(i + 1) + j * nx];
+            REALTYPE dx_im1 = gridData.dx[(i - 1) + j * nx];
+            REALTYPE dy_j = gridData.dy[idx(i, j, nx)];
+            REALTYPE dy_jp1 = gridData.dy[i + (j + 1) * nx];
+            REALTYPE dy_jm1 = gridData.dy[i + (j - 1) * nx];
+
+            sx[id] = (u[id] - (dt / dx_i) * (((1 / (dx_i + dx_ip1)) * (u[(i + 1) + j * nx] * dx_i + u[id] * dx_ip1) * uf[i + (j - 1) * nx])
+                                           - ((1 / (dx_i + dx_im1)) * (u[id] * dx_im1 + u[(i - 1) + j * nx] * dx_i) * uf[i - 1 + (j - 1) * nx]))
+                            - (dt / dy_j) * (((1 / (dy_j + dy_jp1)) * (u[i + (j + 1) * nx] * dy_j + u[id] * dy_jp1) * vf[i - 1 + j * nx])
+                                           - ((1 / (dy_j + dy_jm1)) * (u[id] * dy_jm1 + u[i + (j - 1) * nx] * dy_j) * vf[i - 1 + (j - 1) * nx])));
+
+            sy[id] = (v[id] - (dt / dx_i) * (((1 / (dx_i + dx_ip1)) * (v[(i + 1) + j * nx] * dx_i + v[id] * dx_ip1) * uf[i + (j - 1) * nx])
+                                           - ((1 / (dx_i + dx_im1)) * (v[id] * dx_im1 + v[(i - 1) + j * nx] * dx_i) * uf[i - 1 + (j - 1) * nx]))
+                            - (dt / dy_j) * (((1 / (dy_j + dy_jp1)) * (v[i + (j + 1) * nx] * dy_j + v[id] * dy_jp1) * vf[i - 1 + j * nx])
+                                           - ((1 / (dy_j + dy_jm1)) * (v[id] * dy_jm1 + v[i + (j - 1) * nx] * dy_j) * vf[i - 1 + (j - 1) * nx])));
+            
+        }
+        id += nGrid;
+
+    }
+}
+
+__global__ void ADusolver_kernel(int nx, int ny, Grid gridData, coefficient coeff, IBM ibm, CFDInput input,
+    REALTYPE dt, REALTYPE* u, REALTYPE* uf, REALTYPE* vf, REALTYPE* unew, REALTYPE* sx) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
+
+    while (id < nx * ny) {
+        int i = id % nx;
+        int j = id / nx;
+
+        if (i > 0 && i < nx - 1 && j > 0 && j < ny - 1) {
+            unew[id] = sx[id] + coeff.coeff_dx2_p1[i + j * nx] * u[(i + 1) + j * nx] + coeff.coeff_dx2_m1[i + j * nx] * u[(i - 1) + j * nx]
+                              + coeff.coeff_dy2_p1[i + j * nx] * u[i + (j + 1) * nx] + coeff.coeff_dy2_m1[i + j * nx] * u[i + (j - 1) * nx];
+            
+            unew[id] = ibm.iBlank[i + j * nx] * unew[id] /coeff.coeff[i + j * nx];
+            //unew[id] = (1.0 - input.w_AD) * u[id] + input.w_AD * unew[id]; 
+        }
+        id += nGrid;
+    }
+    
+}
+
+__global__ void ADvsolver_kernel(int nx, int ny, Grid gridData, coefficient coeff, IBM ibm, CFDInput input,
+    REALTYPE dt, REALTYPE* v, REALTYPE* uf, REALTYPE* vf, REALTYPE* vnew, REALTYPE* sy) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
+
+    while (id < nx * ny) {
+        int i = id % nx;
+        int j = id / nx;
+
+        if (i > 0 && i < nx - 1 && j > 0 && j < ny - 1) {
+            vnew[id] = sy[id] + coeff.coeff_dx2_p1[i + j * nx] * v[(i + 1) + j * nx] + coeff.coeff_dx2_m1[i + j * nx] * v[(i - 1) + j * nx]
+                              + coeff.coeff_dy2_p1[i + j * nx] * v[i + (j + 1) * nx] + coeff.coeff_dy2_m1[i + j * nx] * v[i + (j - 1) * nx];
+           
+            vnew[id] = ibm.iBlank[i + j * nx] * vnew[id] / coeff.coeff[i + j * nx];
+            //vnew[id] = (1.0 - input.w_AD) * v[id] + input.w_AD * vnew[id];
+        }
+        id += nGrid;
+    }
+}
+
+__global__ void Compute_uResidual_AD(int nx, int ny, Grid gridData, coefficient coeff, IBM ibm, CFDInput input,
+    REALTYPE dt, REALTYPE* u, REALTYPE* unew,  REALTYPE* uResidue, REALTYPE* sx) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
+
+    while (id < nx * ny) {
+        int i = id % nx;
+        int j = id / nx;
+        uResidue[id] = 0.0;
+        if (i > 0 && i < nx - 1 && j > 0 && j < ny - 1 && ibm.iBlank[id] == 1) {
+            REALTYPE tmp = sx[id] + coeff.coeff_dx2_p1[i + j * nx] * u[(i + 1) + j * nx] + coeff.coeff_dx2_m1[i + j * nx] * u[(i - 1) + j * nx]
+                                  + coeff.coeff_dy2_p1[i + j * nx] * u[i + (j + 1) * nx] + coeff.coeff_dy2_m1[i + j * nx] * u[i + (j - 1) * nx];
+
+            uResidue[id] = abs(ibm.iBlank[i + j * nx] * tmp - u[id] * coeff.coeff[i + j * nx]); 
+            //uResidue[id] = abs(unew[id]-u[id]);
+        }
+        id += nGrid;
+    }
+}
+
+__global__ void Compute_vResidual_AD(int nx, int ny, Grid gridData, coefficient coeff, IBM ibm, CFDInput input,
+    REALTYPE dt, REALTYPE* v, REALTYPE* vnew, REALTYPE* vResidue, REALTYPE* sy) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
+
+    while (id < nx * ny) {
+        int i = id % nx;
+        int j = id / nx;
+        vResidue[id] = 0.0;
+        if (i > 0 && i < nx - 1 && j > 0 && j < ny - 1 && ibm.iBlank[id] == 1) {
+            REALTYPE tmp = sy[id] + coeff.coeff_dx2_p1[i + j * nx] * v[(i + 1) + j * nx] + coeff.coeff_dx2_m1[i + j * nx] * v[(i - 1) + j * nx]
+                                  + coeff.coeff_dy2_p1[i + j * nx] * v[i + (j + 1) * nx] + coeff.coeff_dy2_m1[i + j * nx] * v[i + (j - 1) * nx];
+
+            vResidue[id] = abs(ibm.iBlank[i + j * nx] * tmp - v[id] *coeff.coeff[i + j * nx]);
+            //vResidue[id] = abs(vnew[id] - v[id]);
+        }
+        id += nGrid;
+    }
+}
+
+__global__ void Compute_velf(int nx, int ny, Grid gridData, coefficient coeff, IBM ibm, CFDInput input,
+    REALTYPE* u, REALTYPE* v, REALTYPE* uf, REALTYPE* vf) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
+
+    while (id < nx * (ny - 2)) {
+        int i = id % nx;
+        int j = id / nx;
+
+        if (i > 1 && i < nx && j > 0 && j < ny - 2) {
+            uf[id] = 1.0 / (gridData.dx[i + (j + 1) * nx] + gridData.dx[(i + 1) + (j + 1) * nx])
+                * (u[(i + 1) + (j + 1) * nx] * gridData.dx[i + (j + 1) * nx] + u[i + (j + 1) * nx] * gridData.dx[(i + 1) + (j + 1) * nx]);
+        }
+
+        id += nGrid;
+    }
+
+    while (id < (nx - 2) * ny) {
+        int i = id % (nx - 2);
+        int j = id / (nx - 2);
+
+        if (i > 0 && i < nx - 2 && j > 1 && j < ny) {
+            vf[id] = 1.0 / (gridData.dy[(i + 1) + (j + 1) * nx] + gridData.dy[(i + 1) + j * nx])
+                * (v[(i + 1) + (j + 1) * nx] * gridData.dy[(i + 1) + j * nx] + v[(i + 1) + j * nx] * gridData.dy[(i + 1) + (j + 1) * nx]);
+        }
+        id += nGrid;
+    }
+}
+
+__global__ void set_velocity_BC(int nx, int ny, REALTYPE* u, REALTYPE* v, REALTYPE* uf, REALTYPE* vf) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int nGrid = blockDim.x * gridDim.x;
+
+    while (id < nx * ny) {
+        int i = id % nx;
+        int j = id / nx;
+
+        if (i == 0) {
+            u[id] = -u[id + 1] + 1.0 * 2.0; 
+            v[id] = -v[id + 1] + 0.0 * 2.0;
+        }
+
+        if (j == 0) {
+            u[id] = u[id + nx];
+            v[id] = v[id + nx];
+        }
+
+        if (i == nx-1) {
+            u[id] = u[id - 1];
+            v[id] = v[id - 1]; 
+        }
+
+        if (j == ny-1) {
+            u[id] = u[id - nx];
+            v[id] = v[id - nx];
+        }
+        id += nGrid;
+    }
+
+    while (id < nx * (ny-2)) {
+        int i = id % nx;
+        int j = id / nx;
+
+        if (i == 0) {
+            uf[id] = 1.0;
+        }
+
+        if (j == 0) {
+           uf[id] = 2.0 * u[id] - uf[id + nx];
+        }
+
+        if (i == nx - 1) {
+           uf[id] = 2.0 * u[id] - uf[id - 1];
+        }
+
+        if (j == ny - 3) {
+            uf[id] = 2.0 * u[id] - uf[id - nx];
+        }
+        id += nGrid;
+    }
+
+    while (id < (nx-2) * ny) {
+        int i = id % (nx-2);
+        int j = id / (nx-2);
+
+        if (i == 0) {
+            vf[id] = 0.0;
+        }
+
+        if (j == 0) {
+            vf[id] = 2.0 * v[id] - vf[id + (nx - 2)];
+        }
+
+        if (i == nx - 3) {
+            vf[id] = 2.0 * v[id] - vf[id - 1];
+        }
+
+        if (j == ny - 1) {
+            vf[id] = 2.0 * v[id] - vf[id - (nx - 2)];
+        }
+        id += nGrid;
+    }
+}
+
+
+
+void ImmerseFlow::ADsolver()
+{
+    coefficient coeff;
+    REALTYPE* uTemp, * uResidue;
+    REALTYPE* vTemp, * vResidue;
+    REALTYPE* sx, * sy;
+
+    CHECK_CUDA_ERROR(cudaMalloc(&uTemp, sizeof(REALTYPE) * Input.nx * Input.ny));
+    CHECK_CUDA_ERROR(cudaMalloc(&uResidue, sizeof(REALTYPE) * Input.nx * Input.ny));
+    CHECK_CUDA_ERROR(cudaMalloc(&vTemp, sizeof(REALTYPE) * Input.nx * Input.ny));
+    CHECK_CUDA_ERROR(cudaMalloc(&vResidue, sizeof(REALTYPE) * Input.nx * Input.ny));
+
+    CHECK_CUDA_ERROR(cudaMalloc(&coeff.coeff, Input.nx * Input.ny * sizeof(REALTYPE)));
+    CHECK_CUDA_ERROR(cudaMalloc(&coeff.coeff_dx2_p1, Input.nx * Input.ny * sizeof(REALTYPE)));
+    CHECK_CUDA_ERROR(cudaMalloc(&coeff.coeff_dx2_m1, Input.nx * Input.ny * sizeof(REALTYPE)));
+    CHECK_CUDA_ERROR(cudaMalloc(&coeff.coeff_dy2_p1, Input.nx * Input.ny * sizeof(REALTYPE)));
+    CHECK_CUDA_ERROR(cudaMalloc(&coeff.coeff_dy2_m1, Input.nx * Input.ny * sizeof(REALTYPE)));
+    
+    CHECK_CUDA_ERROR(cudaMalloc(&sx, Input.nx * Input.ny * sizeof(REALTYPE)));
+    CHECK_CUDA_ERROR(cudaMalloc(&sy, Input.nx * Input.ny * sizeof(REALTYPE)));
+
+    calculateADCoefficients << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, Input.dt, coeff, Input.Re);
+    CHECK_CUDA_ERROR(cudaGetLastError()); 
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+    REALTYPE uResidual = 1.0;
+    REALTYPE vResidual = 1.0;
+    int iter = 0;
+
+    calculateADCoefficients << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, Input.dt, coeff, Input.Re);
+    CHECK_CUDA_ERROR(cudaGetLastError());
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+    //Set Boundary Conditions    
+    set_velocity_BC << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, Data.u.velc, Data.v.velc, Data.u.velf, Data.v.velf);
+    CHECK_CUDA_ERROR(cudaGetLastError());
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+    ADSource << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, Input.dt, Data.u.velc, Data.v.velc, 
+                                                                        Data.u.velf, Data.v.velf, sx, sy);
+    CHECK_CUDA_ERROR(cudaGetLastError());
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+    printf("________AD slover________\n");
+   
+    while (uResidual + vResidual > pow(10.0, -6.0) && iter < Input.AD_itermax) {
+       
+        //Set Boundary Conditions    
+        set_velocity_BC << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, Data.u.velc, Data.v.velc, Data.u.velf, Data.v.velf);
+        CHECK_CUDA_ERROR(cudaGetLastError());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+        Compute_velf << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, ibm, Input,
+                         Data.u.velc, Data.v.velc, Data.u.velf, Data.v.velf);
+        CHECK_CUDA_ERROR(cudaGetLastError());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+        ADusolver_kernel << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, ibm, Input, 
+                                                                                    Input.dt, Data.u.velc, Data.u.velf, Data.v.velf, uTemp, sx);
+        CHECK_CUDA_ERROR(cudaGetLastError());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+        ADvsolver_kernel << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, ibm, Input, 
+                                                                                    Input.dt, Data.v.velc, Data.u.velf, Data.v.velf, vTemp, sy);
+        CHECK_CUDA_ERROR(cudaGetLastError());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+        //Set Boundary Conditions    
+        set_velocity_BC << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, Data.u.velc, Data.v.velc, Data.u.velf, Data.v.velf);
+        CHECK_CUDA_ERROR(cudaGetLastError());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+         //Swap pointers
+        REALTYPE* temp = Data.u.velc;
+        Data.u.velc = uTemp;
+        uTemp = temp;
+        
+        temp = Data.v.velc;
+        Data.v.velc = vTemp;
+        vTemp = temp;
+
+        Compute_uResidual_AD << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, ibm, Input, 
+                                                                                        Input.dt, Data.u.velc, uTemp, uResidue, sx);
+        CHECK_CUDA_ERROR(cudaGetLastError());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+        Compute_vResidual_AD << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, ibm, Input,
+                                                                                        Input.dt, Data.v.velc, vTemp, vResidue, sy);
+        CHECK_CUDA_ERROR(cudaGetLastError());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+        Reduction(uResidue, &uResidual);
+        CHECK_CUDA_ERROR(cudaGetLastError());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+        Reduction(vResidue, &vResidual);
+        CHECK_CUDA_ERROR(cudaGetLastError());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+        
+        iter += 1;
+        printf("iter = %d %f %f\n", iter, uResidual, vResidual);
+    }
+
+    CHECK_CUDA_ERROR(cudaGetLastError());
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+   
+    
+    
+    saveDataToFile(Input.nx, Input.ny, gridData.xc, gridData.yc, Data.u.velc, "../results/uc.dat");
+    saveDataToFile(Input.nx, Input.ny, gridData.xc, gridData.yc, Data.v.velc, "../results/vc.dat");
+    
+
+    CHECK_CUDA_ERROR(cudaFree(uTemp));
+    CHECK_CUDA_ERROR(cudaFree(uResidue));
+    CHECK_CUDA_ERROR(cudaFree(vTemp));
+    CHECK_CUDA_ERROR(cudaFree(vResidue));
+
+    CHECK_CUDA_ERROR(cudaFree(coeff.coeff));
+    CHECK_CUDA_ERROR(cudaFree(coeff.coeff_dx2_p1));
+    CHECK_CUDA_ERROR(cudaFree(coeff.coeff_dx2_m1));
+    CHECK_CUDA_ERROR(cudaFree(coeff.coeff_dy2_p1));
+    CHECK_CUDA_ERROR(cudaFree(coeff.coeff_dy2_m1));
+
+    CHECK_CUDA_ERROR(cudaFree(sx));
+    CHECK_CUDA_ERROR(cudaFree(sy));
+}
+
+
+
 void ImmerseFlow::Reduction(REALTYPE *input, REALTYPE* Residual)
 {
     REALTYPE* g_odata, * g_odata2;
 
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&g_odata, sizeof(REALTYPE) * CUDAData.threadsPerBlock));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&g_odata2, sizeof(REALTYPE) * CUDAData.threadsPerBlock));
-    CHECK_LAST_CUDA_ERROR();
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&g_odata, sizeof(REALTYPE) * CUDAData.blocksPerGrid));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&g_odata2, sizeof(REALTYPE) * 1));
+    
 
     // Calculate Error
     switch (CUDAData.threadsPerBlock)
@@ -557,28 +953,32 @@ void ImmerseFlow::Reduction(REALTYPE *input, REALTYPE* Residual)
     switch (CUDAData.threadsPerBlock)
     {
     case 1024:
-        reduce6<1024> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
+        reduce6<1024> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.blocksPerGrid); break;
     case 512:
-        reduce6<512> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
+        reduce6<512> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.blocksPerGrid); break;
     case 256:
-        reduce6<256> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
+        reduce6<256> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.blocksPerGrid); break;
     case 128:
-        reduce6<128> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
+        reduce6<128> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.blocksPerGrid); break;
     case 64:
-        reduce6< 64> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
+        reduce6< 64> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.blocksPerGrid); break;
     case 32:
-        reduce6< 32> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
+        reduce6< 32> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.blocksPerGrid); break;
     case 16:
-        reduce6< 16> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
+        reduce6< 16> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.blocksPerGrid); break;
     case 8:
-        reduce6< 8> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
+        reduce6< 8> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.blocksPerGrid); break;
     case 4:
-        reduce6< 4> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
+        reduce6< 4> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.blocksPerGrid); break;
     case 2:
-        reduce6< 2> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
+        reduce6< 2> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.blocksPerGrid); break;
     case 1:
-        reduce6< 1> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.threadsPerBlock); break;
+        reduce6< 1> << < BlocksPerGrid, CUDAData.threadsPerBlock, CUDAData.threadsPerBlock * sizeof(REALTYPE) >> > (g_odata, g_odata2, CUDAData.blocksPerGrid); break;
     }
 
+    
     CHECK_CUDA_ERROR(cudaMemcpy(Residual, g_odata2, sizeof(REALTYPE) * 1, cudaMemcpyDeviceToHost));
+
+    CHECK_CUDA_ERROR(cudaFree(g_odata));
+    CHECK_CUDA_ERROR(cudaFree(g_odata2));
 }

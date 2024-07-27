@@ -87,7 +87,12 @@ int main() {
     // Initialize and print the CFD data using CUDA
     Solver.readGridData();
     Solver.initializeData();
-    Solver.PPESolver();
+
+    for (int timestep = 0; timestep < 1000; ++timestep)
+    {
+        Solver.ADsolver();
+    }
+    //Solver.PPESolver();
     Solver.freeAllocation();
 
     return 0;

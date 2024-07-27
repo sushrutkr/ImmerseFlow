@@ -4,7 +4,7 @@ Restart     Restart_Time
 
 ___________________________| Domain Information |________________________________
 nx      ny 
-50      50
+10       10
 
 Lx      Ly 
 10      5                                      
@@ -12,12 +12,12 @@ Lx      Ly
 
 ________________________| Iterative Solver Settings |____________________________
 w-AD    w-PPE   AD-itermax  PPE-itermax  AD_Solver PPE_Solver(1. Point GS, 2. Line SOR)
-1       1       25          100000          1         1
+1       1       100          100000          1         1
 
 
 ___________________________| Simulation Settings |_______________________________
 ErrorMax    tmax    dt       Re      mu
-1E-6        100       0.001    150    0.01
+1E-6        100       0.01    1    0.01
 
 ___________________________| Data Write |_______________________________
 Write Interval(t/dt)

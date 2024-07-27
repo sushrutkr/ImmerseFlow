@@ -61,6 +61,12 @@ struct coeffPPE {
     REALTYPE* coeff_ppe;
 };
 
+struct coefficient {
+    REALTYPE* coeff_dx2_p1, * coeff_dx2_m1,
+        * coeff_dy2_p1, * coeff_dy2_m1;
+    REALTYPE* coeff;
+};
+
 struct ImmerseFlow {
     CFDData   Data;
     CFDInput  Input;
@@ -77,6 +83,7 @@ struct ImmerseFlow {
     void freeAllocation();
     void CUDAQuery();
     void PPESolver();
+    void ADsolver();
     void Reduction(REALTYPE* input, REALTYPE* output);
 };
 
