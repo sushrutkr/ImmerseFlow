@@ -78,20 +78,21 @@ int main() {
     readInputFile("../inputs/inputs.txt", Solver);
      
 
-    printf("nx, ny, %i, %i\n",Solver.Input.nxf, Solver.Input.nyf);
+  
 
     // Allocate memory for CFD data
     Solver.CUDAQuery();
     Solver.allocation();
-
     // Initialize and print the CFD data using CUDA
     Solver.readGridData();
     Solver.initializeData();
-
-    for (int timestep = 0; timestep < 1000; ++timestep)
+    
+    
+    for (int timestep = 0; timestep < 20; ++timestep)
     {
         Solver.ADsolver();
     }
+   
     //Solver.PPESolver();
     Solver.freeAllocation();
 
