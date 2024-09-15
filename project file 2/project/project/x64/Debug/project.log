@@ -1,6 +1,0 @@
-﻿  Compiling CUDA source file ..\..\..\src\include\preSim.cu...
-  
-  C:\Users\khj06\Desktop\ImmerseFlow\project file 2\project\project>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\bin\nvcc.exe" -gencode=arch=compute_52,code=\"sm_52,compute_52\" --use-local-env -ccbin "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\bin\HostX64\x64" -x cu   -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\include"  -G   --keep-dir x64\Debug  -maxrregcount=0   --machine 64 --compile -cudart static  -g  -DWIN32 -DWIN64 -D_DEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -Xcompiler "/Fdx64\Debug\vc143.pdb" -o "C:\Users\khj06\Desktop\ImmerseFlow\project file 2\project\project\x64\Debug\preSim.cu.obj" "C:\Users\khj06\Desktop\ImmerseFlow\src\include\preSim.cu" 
-  preSim.cu
-  tmpxft_000066f4_00000000-7_preSim.cudafe1.cpp
-  project.vcxproj -> C:\Users\khj06\Desktop\ImmerseFlow\project file 2\project\x64\Debug\project.exe
