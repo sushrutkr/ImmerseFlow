@@ -27,7 +27,7 @@ In this simulation, we observe the fluid flow behavior at a Reynolds number of 1
 
 For a Reynolds number of 300, the contour plot reveals flow structures for an elliptic airfoil, including vortices and wake regions. This plot demonstrates the solver's capability to accurately capture the flow dynamics around asymmetric bodies.
 
-### Flow Past Elliptic Airfoil at Re = 300
+### Flow Past Complex Spiked Shape at Re = 300
 
 ![Re = 300 - Complex Shaped Objects](figs/complex.png)
 
