@@ -4,11 +4,10 @@
 
 ## Overview
 
-ImmerseFlow++ is a state-of-the-art Navier-Stokes solver designed to tackle fluid flow problems involving complex geometries and moving boundaries. By integrating the sharp interface immersed boundary method and leveraging the computational power of both CPU (C++) and GPU (CUDA) architectures, ImmerseFlow++ delivers high performance and scalability for solving intricate fluid dynamics scenarios.
+ImmerseFlow++ is a sharp-interface immersed boundary methods based Navier-Stokes solver designed to solve fluid flow problems involving complex geometries. The software code leverages the computational power of GPU architectures using custom CUDA kernels. Current effort focuses on utilizing CUDA aware MPI for increasing the scalability to multi-GPU cluster
 
 ## Features
 
-- **2D and 3D Navier-Stokes Equations**: Comprehensive solution capabilities for both two-dimensional and three-dimensional fluid flow problems.
 - **Sharp Interface Immersed Boundary Method**: Efficiently handle complex geometries and moving boundaries with high accuracy.
 - **CUDA Acceleration**: Utilize GPU computing to achieve significant performance improvements.
 - **Versatile Boundary Conditions**: Support for various boundary conditions and fluid properties to cater to a wide range of applications.
@@ -16,23 +15,23 @@ ImmerseFlow++ is a state-of-the-art Navier-Stokes solver designed to tackle flui
 
 ## Contour Plots
 
-### Contour Plot 1
+### Flow Past Cylinder at Re = 1000
 
-![Re = 1000](figs/Re1000.png)
+![Re = 300](figs/Re1000.png)
 
-In this simulation, we observe the fluid flow behavior at a Reynolds number of 300. The contour plot illustrates the streamline patterns and vorticity distribution, highlighting the intricate interactions between the fluid and immersed boundaries.
+In this simulation, we observe the fluid flow behavior at a Reynolds number of 1000. The contour plot illustrates the vorticity distribution, highlighting the intricate interactions between the fluid and immersed boundaries.
 
-### Contour Plot 2
+### Flow Past Elliptic Airfoil at Re = 300
 
 ![Re = 300 - Elliptic Airfoil](figs/Re300El.png)
 
-For a Reynolds number of 1000, the contour plot reveals more complex flow structures, including vortices and wake regions. This plot demonstrates the solver's capability to accurately capture the dynamics of higher Reynolds number flows.
+For a Reynolds number of 300, the contour plot reveals flow structures for an elliptic airfoil, including vortices and wake regions. This plot demonstrates the solver's capability to accurately capture the flow dynamics around asymmetric bodies.
 
-### Contour Plot 3
+### Flow Past Elliptic Airfoil at Re = 300
 
 ![Re = 300 - Complex Shaped Objects](figs/complex.png)
 
-At a Reynolds number of 1000, the fluid flow exhibits turbulent characteristics. The contour plot provides a detailed visualization of the turbulent eddies and flow separation, showcasing ImmerseFlow++'s robustness in handling highly dynamic fluid behaviors.
+At a Reynolds number of 300, the fluid flow exhibits complex pattern around very complex body shapes. The contour plot provides a detailed visualization of the flow separation, showcasing ImmerseFlow++'s robustness in simulating fluid behaviors around such complex shapes.
 
 ## Getting Started
 
