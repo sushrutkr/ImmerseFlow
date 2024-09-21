@@ -1,4 +1,6 @@
 #include "./header/preSim.cuh"
+#include "./header/ADSolver.cuh"
+#include "./header/PPESolver.cuh"
 #include "./header/globalVariables.cuh"
 #include <iostream>
 #include <fstream>
@@ -88,7 +90,7 @@ int main() {
     Solver.initializeData();
     
     
-    for (int timestep = 0; timestep < 20; ++timestep)
+    for (int timestep = 0; timestep < Solver.Input.tmax; ++timestep)
     {
         Solver.ADsolver();
     }
