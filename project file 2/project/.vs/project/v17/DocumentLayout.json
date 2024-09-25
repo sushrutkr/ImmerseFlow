@@ -3,25 +3,35 @@
   "WorkspaceRootPath": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file 2\\project\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\preSim.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\ADSolver.cu||{8B382828-6202-11D1-8870-0000F87579D2}|"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\main.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\preSim.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\header\\globalVariables.cuh||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\postSim.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\main.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\globalVariables.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\AD_PPE_Correction.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\postSim.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\header\\preSim.cuh||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\header\\postSim.cuh||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\globalVariables.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file 2\\project\\project\\cpp.hint||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{51201686-BADC-491B-83D7-92307748D88E}|project\\project.vcxproj|solutionrelative:project\\cpp.hint||{8B382828-6202-11D1-8870-0000F87579D2}"
     }
   ],
   "DocumentGroupContainers": [
@@ -31,17 +41,17 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "main.cu",
               "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\main.cu",
               "RelativeDocumentMoniker": "..\\..\\src\\main.cu",
               "ToolTip": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\main.cu",
               "RelativeToolTip": "..\\..\\src\\main.cu",
-              "ViewState": "AQIAAEsAAAAAAAAAAAAuwFwAAAASAAAA",
+              "ViewState": "AQIAAEsAAAAAAAAAAAAuwFYAAAARAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2024-08-02T02:08:29.745Z",
               "IsPinned": true,
@@ -49,7 +59,46 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 4,
+              "Title": "AD_PPE_Correction.cu",
+              "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\AD_PPE_Correction.cu",
+              "RelativeDocumentMoniker": "..\\..\\src\\include\\AD_PPE_Correction.cu",
+              "ToolTip": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\AD_PPE_Correction.cu",
+              "RelativeToolTip": "..\\..\\src\\include\\AD_PPE_Correction.cu",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-09-25T01:51:54.509Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ADSolver.cu",
+              "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\ADSolver.cu",
+              "RelativeDocumentMoniker": "..\\..\\src\\include\\ADSolver.cu",
+              "ToolTip": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\ADSolver.cu",
+              "RelativeToolTip": "..\\..\\src\\include\\ADSolver.cu",
+              "ViewState": "AQIAAF0BAAAAAAAAAAAAAHoBAAA1AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-09-25T01:48:18.528Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "cpp.hint",
+              "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file 2\\project\\project\\cpp.hint",
+              "RelativeDocumentMoniker": "project\\cpp.hint",
+              "ToolTip": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\project file 2\\project\\project\\cpp.hint",
+              "RelativeToolTip": "project\\cpp.hint",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-09-25T01:43:52.626Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
               "Title": "preSim.cuh",
               "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\header\\preSim.cuh",
               "RelativeDocumentMoniker": "..\\..\\src\\header\\preSim.cuh",
@@ -57,11 +106,12 @@
               "RelativeToolTip": "..\\..\\src\\header\\preSim.cuh",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAMAAAAeAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2024-06-20T01:49:19.016Z"
+              "WhenOpened": "2024-06-20T01:49:19.016Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 8,
               "Title": "globalVariables.cu",
               "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\globalVariables.cu",
               "RelativeDocumentMoniker": "..\\..\\src\\include\\globalVariables.cu",
@@ -69,36 +119,38 @@
               "RelativeToolTip": "..\\..\\src\\include\\globalVariables.cu",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAQAAAAKAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2024-06-20T01:49:15.853Z"
+              "WhenOpened": "2024-06-20T01:49:15.853Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "preSim.cu",
               "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\preSim.cu",
               "RelativeDocumentMoniker": "..\\..\\src\\include\\preSim.cu",
               "ToolTip": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\preSim.cu",
               "RelativeToolTip": "..\\..\\src\\include\\preSim.cu",
-              "ViewState": "AQIAAD0DAAAAAAAAAAAcwFIDAAAtAAAA",
+              "ViewState": "AQIAAIoAAAAAAAAAAAAvwKMAAAASAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2024-06-20T01:44:35.723Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 5,
               "Title": "postSim.cu",
               "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\postSim.cu",
               "RelativeDocumentMoniker": "..\\..\\src\\include\\postSim.cu",
               "ToolTip": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\include\\postSim.cu",
               "RelativeToolTip": "..\\..\\src\\include\\postSim.cu",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAgAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABQAAAAVAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2024-06-20T01:57:06.149Z"
+              "WhenOpened": "2024-06-20T01:57:06.149Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "postSim.cuh",
               "DocumentMoniker": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\header\\postSim.cuh",
               "RelativeDocumentMoniker": "..\\..\\src\\header\\postSim.cuh",
@@ -106,7 +158,8 @@
               "RelativeToolTip": "..\\..\\src\\header\\postSim.cuh",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAwAAAA7AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2024-06-20T01:57:11.011Z"
+              "WhenOpened": "2024-06-20T01:57:11.011Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -116,7 +169,7 @@
               "RelativeDocumentMoniker": "..\\..\\src\\header\\globalVariables.cuh",
               "ToolTip": "C:\\Users\\khj06\\Desktop\\ImmerseFlow\\src\\header\\globalVariables.cuh",
               "RelativeToolTip": "..\\..\\src\\header\\globalVariables.cuh",
-              "ViewState": "AQIAAEMAAAAAAAAAAAAcwFIAAAAXAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAUAAAAmAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2024-06-20T01:49:15.052Z",
               "EditorCaption": ""

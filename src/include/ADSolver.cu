@@ -296,16 +296,16 @@ void ImmerseFlow::ADsolver()
 
 
   Compute_velf << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, ibm, Input,
-                                                                          Data.u.velc, Data.v.velc, Data.u.velf, Data.v.velf);
+                                                                          Data.u.velInter, Data.v.velInter, Data.u.velf, Data.v.velf);
   CHECK_CUDA_ERROR(cudaGetLastError());
   CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
   //Set Boundary Conditions    
-  set_velocity_BC << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, Data.u.velc, Data.v.velc, Data.u.velf, Data.v.velf);
+  set_velocity_BC << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, Data.u.velInter, Data.v.velInter, Data.u.velf, Data.v.velf);
   CHECK_CUDA_ERROR(cudaGetLastError());
   CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
-  ADSource << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, Input.dt, Data.u.velc, Data.v.velc, 
+  ADSource << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, Input.dt, Data.u.velInter, Data.v.velInter,
                                                                       Data.u.velf, Data.v.velf, sx, sy);
   CHECK_CUDA_ERROR(cudaGetLastError());
   CHECK_CUDA_ERROR(cudaDeviceSynchronize());
@@ -314,46 +314,46 @@ void ImmerseFlow::ADsolver()
  
   while (uResidual + vResidual > pow(10.0, -6.0) && iter < Input.AD_itermax) {     
       //Set Boundary Conditions    
-      set_velocity_BC << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, Data.u.velc, Data.v.velc, Data.u.velf, Data.v.velf);
+      set_velocity_BC << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, Data.u.velInter, Data.v.velInter, Data.u.velf, Data.v.velf);
       CHECK_CUDA_ERROR(cudaGetLastError());
       CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
       Compute_velf << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, ibm, Input,
-                       Data.u.velc, Data.v.velc, Data.u.velf, Data.v.velf);
+                       Data.u.velInter, Data.v.velInter, Data.u.velf, Data.v.velf);
       CHECK_CUDA_ERROR(cudaGetLastError());
       CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
       ADusolver_kernel << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, ibm, Input, 
-                                                                                  Input.dt, Data.u.velc, Data.u.velf, Data.v.velf, uTemp, sx);
+                                                                                  Input.dt, Data.u.velInter, Data.u.velf, Data.v.velf, uTemp, sx);
       CHECK_CUDA_ERROR(cudaGetLastError());
       CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
       ADvsolver_kernel << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, ibm, Input, 
-                                                                                  Input.dt, Data.v.velc, Data.u.velf, Data.v.velf, vTemp, sy);
+                                                                                  Input.dt, Data.v.velInter, Data.u.velf, Data.v.velf, vTemp, sy);
       CHECK_CUDA_ERROR(cudaGetLastError());
       CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
       //Set Boundary Conditions    
-      set_velocity_BC << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, Data.u.velc, Data.v.velc, Data.u.velf, Data.v.velf);
+      set_velocity_BC << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, Data.u.velInter, Data.v.velInter, Data.u.velf, Data.v.velf);
       CHECK_CUDA_ERROR(cudaGetLastError());
       CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
        //Swap pointers
-      REALTYPE* temp = Data.u.velc;
-      Data.u.velc = uTemp;
+      REALTYPE* temp = Data.u.velInter;
+      Data.u.velInter = uTemp;
       uTemp = temp;
       
-      temp = Data.v.velc;
-      Data.v.velc = vTemp;
+      temp = Data.v.velInter;
+      Data.v.velInter = vTemp;
       vTemp = temp;
 
       Compute_uResidual_AD << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, ibm, Input, 
-                                                                                      Input.dt, Data.u.velc, uTemp, uResidue, sx);
+                                                                                      Input.dt, Data.u.velInter, uTemp, uResidue, sx);
       CHECK_CUDA_ERROR(cudaGetLastError());
       CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
       Compute_vResidual_AD << <CUDAData.blocksPerGrid, CUDAData.threadsPerBlock >> > (Input.nx, Input.ny, gridData, coeff, ibm, Input,
-                                                                                      Input.dt, Data.v.velc, vTemp, vResidue, sy);
+                                                                                      Input.dt, Data.v.velInter, vTemp, vResidue, sy);
       CHECK_CUDA_ERROR(cudaGetLastError());
       CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
@@ -375,8 +375,8 @@ void ImmerseFlow::ADsolver()
  
   
   
-  saveDataToFile(Input.nx, Input.ny, gridData.xc, gridData.yc, Data.u.velc, "../results/uc.dat");
-  saveDataToFile(Input.nx, Input.ny, gridData.xc, gridData.yc, Data.v.velc, "../results/vc.dat");
+  saveDataToFile(Input.nx, Input.ny, gridData.xc, gridData.yc, Data.u.velInter, "../results/uc.dat");
+  saveDataToFile(Input.nx, Input.ny, gridData.xc, gridData.yc, Data.v.velInter, "../results/vc.dat");
   
 
   CHECK_CUDA_ERROR(cudaFree(uTemp));

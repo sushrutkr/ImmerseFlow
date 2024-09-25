@@ -11,14 +11,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\header\ADSolver.cuh" />
+    <ClInclude Include="..\..\..\src\header\AD_PPE_Correction.cuh" />
     <ClInclude Include="..\..\..\src\header\globalVariables.cuh" />
     <ClInclude Include="..\..\..\src\header\MACRO.h" />
     <ClInclude Include="..\..\..\src\header\postSim.cuh" />
+    <ClInclude Include="..\..\..\src\header\PPESolver.cuh" />
     <ClInclude Include="..\..\..\src\header\preSim.cuh" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\..\..\src\include\ADSolver.cu" />
+    <CudaCompile Include="..\..\..\src\include\AD_PPE_Correction.cu" />
     <CudaCompile Include="..\..\..\src\include\globalVariables.cu" />
     <CudaCompile Include="..\..\..\src\include\postSim.cu" />
+    <CudaCompile Include="..\..\..\src\include\PPESolver.cu" />
     <CudaCompile Include="..\..\..\src\include\preSim.cu" />
     <CudaCompile Include="..\..\..\src\main.cu" />
   </ItemGroup>
