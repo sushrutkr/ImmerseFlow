@@ -63,7 +63,7 @@ struct coeffPPE {
 
 struct coefficient {
     REALTYPE* coeff_dx2_p1, * coeff_dx2_m1,
-        * coeff_dy2_p1, * coeff_dy2_m1;
+            * coeff_dy2_p1, * coeff_dy2_m1;
     REALTYPE* coeff;
 };
 

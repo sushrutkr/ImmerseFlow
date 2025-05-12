@@ -86,11 +86,9 @@ __global__ void calculatePPECoefficients(int nx, int ny, Grid gridData, coeffPPE
 
       if (i > 0 && i < nx-1 && j > 0 && j < ny-1) {
           REALTYPE dx_i = gridData.dx[idx(i,j,nx)];
-          REALTYPE dx_ip1 = gridData.dx[(i+1) + j * nx];
-          REALTYPE dx_im1 = gridData.dx[(i-1) + j * nx];
           REALTYPE dy_j = gridData.dy[idx(i,j,nx)];
-          REALTYPE dy_jp1 = gridData.dy[i + (j+1) * nx];
-          REALTYPE dy_jm1 = gridData.dy[i + (j-1) * nx];
+
+          ps[id] = 
 
           coeff.coeff_ppe[id] = -1 * (((2 / (dx_i * (dx_i + dx_ip1))) + (2 / (dx_i * (dx_i + dx_im1)))) +
                                       ((2 / (dy_j * (dy_j + dy_jp1))) + (2 / (dy_j * (dy_j + dy_jm1)))));
@@ -105,19 +103,56 @@ __global__ void calculatePPECoefficients(int nx, int ny, Grid gridData, coeffPPE
   }
 }
 
+__global__ void calculateSourcePPE(int nx, int ny, Grid gridData, REALTYPE* dt, REALTYPE* uf, REALTYPE* vf, REALTYPE* ps){
+  int id = blockIdx.x * blockDim.x + threadIdx.x;
+  int nGrid = blockDim.x * gridDim.x;
+
+  while (id < nx*ny){
+    int i = id % nx;
+    int j = id / nx;
+    
+    ps[id] = 0.0;
+
+    if (i > 0 && i < nx-1 && j > 0 && j < ny-1) {
+      REALTYPE dx_i = gridData.dx[idx(i,j,nx)];
+      REALTYPE dx_ip1 = gridData.dx[(i+1) + j * nx];
+      REALTYPE dx_im1 = gridData.dx[(i-1) + j * nx];
+      REALTYPE dy_j = gridData.dy[idx(i,j,nx)];
+      REALTYPE dy_jp1 = gridData.dy[i + (j+1) * nx];
+      REALTYPE dy_jm1 = gridData.dy[i + (j-1) * nx];
+
+      coeff.coeff_ppe[id] = -1 * (((2 / (dx_i * (dx_i + dx_ip1))) + (2 / (dx_i * (dx_i + dx_im1)))) +
+                                  ((2 / (dy_j * (dy_j + dy_jp1))) + (2 / (dy_j * (dy_j + dy_jm1)))));
+
+      coeff.coeff_dx2_m1[id] = (2 / (dx_i * (dx_i + dx_im1)));
+      coeff.coeff_dx2_p1[id] = (2 / (dx_i * (dx_i + dx_ip1)));
+      coeff.coeff_dy2_m1[id] = (2 / (dy_j * (dy_j + dy_jm1)));
+      coeff.coeff_dy2_p1[id] = (2 / (dy_j * (dy_j + dy_jp1)));
+    }
+
+    id += nGrid;
+  }
+}
+
 void ImmerseFlow::PPESolver() {
 
   REALTYPE* pTemp, * pResidue;
+  REALTYPE* ps;
+
   
   coeffPPE coeff;
   
   CHECK_CUDA_ERROR(cudaMallocManaged(&pTemp, sizeof(REALTYPE) * Input.nx * Input.ny));
+  CHECK_CUDA_ERROR(cudaMallocManaged(&ps, Input.nx * Input.ny * sizeof(REALTYPE)));
   CHECK_CUDA_ERROR(cudaMallocManaged(&pResidue, sizeof(REALTYPE) * Input.nx * Input.ny));
   CHECK_CUDA_ERROR(cudaMallocManaged(&coeff.coeff_ppe, Input.nx * Input.ny * sizeof(REALTYPE)));
   CHECK_CUDA_ERROR(cudaMallocManaged(&coeff.coeff_dx2_p1, Input.nx * Input.ny * sizeof(REALTYPE)));
   CHECK_CUDA_ERROR(cudaMallocManaged(&coeff.coeff_dx2_m1, Input.nx * Input.ny * sizeof(REALTYPE)));
   CHECK_CUDA_ERROR(cudaMallocManaged(&coeff.coeff_dy2_p1, Input.nx * Input.ny * sizeof(REALTYPE)));
   CHECK_CUDA_ERROR(cudaMallocManaged(&coeff.coeff_dy2_m1, Input.nx * Input.ny * sizeof(REALTYPE)));
+
+  //Compute Source term for PPE equations
+  calculateSourcePPE<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock>>>(Input.nx, Input.ny, gridData, );
 
   //Compute Coefficient Matrix
   calculatePPECoefficients<<<CUDAData.blocksPerGrid, CUDAData.threadsPerBlock>>>(Input.nx, Input.ny, gridData, coeff);
