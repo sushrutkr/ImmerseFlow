@@ -4,12 +4,12 @@
 
 ## Overview
 
-ImmerseFlow++ is a state-of-the-art Navier-Stokes solver designed to tackle fluid flow problems involving complex geometries and moving boundaries. By integrating the sharp interface immersed boundary method and leveraging the computational power of both CPU (C++) and GPU (CUDA) architectures, ImmerseFlow++ delivers high performance and scalability for solving intricate fluid dynamics scenarios.
+ImmerseFlow++ is a Navier-Stokes simulation code designed to solve fluid flow problems involving complex geometries and moving boundaries. The code uses sharp-interface immersed boundary method and implemented for GPUs using CUDA and C++.
 
 ## Features
 
-- **2D and 3D Navier-Stokes Equations**: Comprehensive solution capabilities for both two-dimensional and three-dimensional fluid flow problems.
-- **Sharp Interface Immersed Boundary Method**: Efficiently handle complex geometries and moving boundaries with high accuracy.
+- **2D and 3D Navier-Stokes Equations**: Comprehensive solution capabilities for both two-dimensional fluid flow problems. 3D in works
+- **Sharp Interface Immersed Boundary Method**: Efficiently handle complex geometries and moving boundaries with high accuracy and exact application of Neumann pressure boundary conditions.
 - **CUDA Acceleration**: Utilize GPU computing to achieve significant performance improvements.
 - **Versatile Boundary Conditions**: Support for various boundary conditions and fluid properties to cater to a wide range of applications.
 - **Visualization Tools**: Built-in tools for visualizing and analyzing simulation results.
