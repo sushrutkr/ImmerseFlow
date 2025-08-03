@@ -4,7 +4,9 @@
 
 ## Overview
 
-ImmerseFlow++ is a Navier-Stokes simulation code designed to solve fluid flow problems involving complex geometries and moving boundaries. The code uses sharp-interface immersed boundary method and implemented for GPUs using CUDA and C++.
+ImmerseFlow++ is a simplified implementation (using stair-step immersed boundary method) of the ViCar3D. 
+
+A brief introduction of ViCar3D. It is almost a 30 year old legacy codebase that was reprogrammed by Sushrut Kumar as part of his PhD disseration to run over multi-GPU and multi-node setups. The condensed details can be read in this ![paper](https://arxiv.org/abs/2505.17287) on ArXiV. Currently, the access to codebase is only given to past and current members of Prof. Rajat Mittal's lab at Johns Hopkins University. A reference to ImmerseFlow can be taken along with papers by Prof. Rajat Mittal by members of scientific community to develop their own numerical solvers. 
 
 ## Features
 
