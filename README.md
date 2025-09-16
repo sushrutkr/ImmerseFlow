@@ -6,7 +6,9 @@
 
 ImmerseFlow++ is a simplified implementation (using stair-step immersed boundary method) of the ViCar3D. 
 
-A brief introduction of ViCar3D. It is almost a 30 year old legacy codebase that was reprogrammed by Sushrut Kumar as part of his PhD disseration to run over multi-GPU and multi-node setups. The condensed details can be read in this [paper](https://arxiv.org/abs/2505.17287) on ArXiV. Currently, the access to codebase is only given to past and current members of Prof. Rajat Mittal's lab at Johns Hopkins University. A reference to ImmerseFlow can be taken along with papers by Prof. Rajat Mittal by members of scientific community to develop their own numerical solvers. 
+A brief introduction of ViCar3D. It is almost a 30 year old legacy codebase that was reprogrammed by Sushrut Kumar as part of his PhD disseration to run over multi-GPU and multi-node setups. The condensed details can be read in this [paper](https://arxiv.org/abs/2505.17287) on ArXiV and the capabilites can be seen it this [paper](https://asmedigitalcollection.asme.org/fluidsengineering/article/147/3/030801/1210318/Freeman-Scholar-Lecture-2021-Sharp-Interface). The moto behind ViCar3D development was "simulate what you see or think". Hence, the complexity behind reprogramming was tremendous.
+
+Currently, the access to codebase is only given to past and current members of Prof. Rajat Mittal's lab at Johns Hopkins University. A reference to ImmerseFlow can be taken along with papers by Prof. Rajat Mittal by members of scientific community to develop their own numerical solvers. 
 
 ## Features
 
